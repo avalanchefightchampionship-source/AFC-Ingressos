@@ -116,7 +116,11 @@ export default async function handler(request, response) {
     });
   } catch (error) {
     console.error('Falha ao criar pedido antes do checkout.', {
-      code: error?.code || null
+      code: error?.code || null,
+      name: error?.name || null,
+      message: error?.message || null,
+      details: error?.details || null,
+      hint: error?.hint || null
     });
     return sendJson(response, 503, {
       error: 'Nao foi possivel registrar o pedido. Tente novamente.'
