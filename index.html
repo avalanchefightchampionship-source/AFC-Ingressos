@@ -1,0 +1,972 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Ingressos para o Avalanche Fight Championship, dia 15 de agosto de 2026, em Campo Mourão." />
+  <meta name="theme-color" content="#050505" />
+  <meta property="og:title" content="Avalanche Fight Championship | 15 de Agosto em Campo Mourão" />
+  <meta property="og:description" content="Uma noite de MMA, adrenalina e grandes combates em Campo Mourão." />
+  <meta property="og:type" content="website" />
+  <title>Avalanche Fight Championship | 15 de Agosto em Campo Mourão</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --red: #e10600;
+      --red-strong: #ff2e2e;
+      --dark-red: #8d0200;
+      --black: #050505;
+      --black-soft: #0d0d0d;
+      --panel: #101010;
+      --panel-2: #151515;
+      --text: #f5f5f5;
+      --muted: #b7b7b7;
+      --line: rgba(255,255,255,.12);
+      --shadow: 0 20px 55px rgba(0,0,0,.4);
+      --radius: 18px;
+      --container: min(1160px, calc(100% - 36px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--black);
+      color: var(--text);
+      font-family: 'Montserrat', Arial, sans-serif;
+      line-height: 1.5;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(120deg, rgba(255,255,255,.035) 0 1px, transparent 1px 100%),
+        linear-gradient(120deg, transparent 0 48%, rgba(225,6,0,.06) 48% 52%, transparent 52% 100%);
+      background-size: 90px 90px, 140px 140px;
+      opacity: .3;
+      mix-blend-mode: screen;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at top left, rgba(225,6,0,.15), transparent 36%),
+        radial-gradient(circle at bottom right, rgba(225,6,0,.1), transparent 30%),
+        linear-gradient(180deg, transparent 0%, rgba(0,0,0,.28) 100%);
+    }
+
+    a, button, input, select { font: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .container { width: var(--container); margin: 0 auto; }
+
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      height: 78px;
+      padding: 0 max(18px, calc((100% - 1160px) / 2));
+      background: rgba(0,0,0,.78);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 10px 35px rgba(0,0,0,.22);
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo { width: 92px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,.08); }
+    .brand-text { display: flex; flex-direction: column; gap: 2px; }
+    .brand-text strong { font-size: .8rem; letter-spacing: .25em; text-transform: uppercase; color: #fff; }
+    .brand-text span { font-size: .72rem; color: var(--muted); }
+
+    .nav { display: flex; gap: 24px; margin-left: auto; font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; }
+    .nav a { color: rgba(255,255,255,.8); transition: color .25s ease, transform .25s ease; }
+    .nav a:hover { color: #fff; transform: translateY(-1px); }
+
+    .btn, .top-cta {
+      border: 0;
+      border-radius: 999px;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: .12em;
+      transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      padding: 0 24px;
+    }
+
+    .btn:hover, .top-cta:hover { transform: translateY(-2px); }
+    .btn:active, .top-cta:active { transform: translateY(0); }
+
+    .top-cta {
+      margin-left: 12px;
+      background: linear-gradient(135deg, var(--red), var(--dark-red));
+      color: #fff;
+      box-shadow: 0 16px 34px rgba(225,6,0,.28);
+    }
+
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      padding-top: 78px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      background:
+        linear-gradient(100deg, rgba(0,0,0,.94) 8%, rgba(0,0,0,.72) 42%, rgba(0,0,0,.44) 100%),
+        url('evento-anterior.jpg') center/cover no-repeat;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: auto auto -12% -10%;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: rgba(225,6,0,.2);
+      filter: blur(100px);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      gap: 20px;
+      padding: 64px 0;
+      max-width: 770px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      font-size: .84rem;
+      font-weight: 800;
+      letter-spacing: .26em;
+      text-transform: uppercase;
+      color: var(--red-strong);
+      padding: 8px 14px;
+      border: 1px solid rgba(225,6,0,.24);
+      border-radius: 999px;
+      background: rgba(225,6,0,.08);
+    }
+
+    .hero h1 {
+      font-family: 'Bebas Neue', 'Montserrat', sans-serif;
+      font-size: clamp(3rem, 6vw, 5.8rem);
+      line-height: .92;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      margin: 0;
+      max-width: 760px;
+    }
+
+    .hero h1 span { color: var(--red-strong); }
+
+    .hero p { margin: 0; max-width: 650px; font-size: 1.06rem; color: #d7d7d7; }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.1);
+      font-size: .95rem;
+      font-weight: 700;
+    }
+
+    .hero-badge strong { color: var(--red-strong); font-family: 'Bebas Neue', 'Montserrat', sans-serif; font-size: 1.15rem; letter-spacing: .03em; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--red), var(--dark-red));
+      color: #fff;
+      box-shadow: 0 18px 38px rgba(225,6,0,.25);
+    }
+    .btn-secondary {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: #fff;
+    }
+
+    .micro {
+      margin-top: 4px;
+      font-size: .92rem;
+      color: #bdbdbd;
+      font-weight: 600;
+    }
+
+    .info-strip {
+      position: relative;
+      z-index: 10;
+      margin-top: -32px;
+      padding-bottom: 20px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      background: rgba(9,9,9,.9);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .info-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 10px;
+      min-height: 90px;
+    }
+
+    .info-card + .info-card { border-left: 1px solid rgba(255,255,255,.08); }
+
+    .info-icon {
+      width: 44px;
+      height: 44px;
+      flex: 0 0 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(225,6,0,.16);
+      color: var(--red-strong);
+    }
+
+    .info-icon svg { width: 20px; height: 20px; fill: currentColor; }
+
+    .info-card span {
+      display: block;
+      font-size: .74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .2em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .info-card strong {
+      display: block;
+      font-size: 1rem;
+      color: #fff;
+      line-height: 1.3;
+    }
+
+    section { padding: 96px 0; }
+    .section-title { font-family: 'Bebas Neue', 'Montserrat', sans-serif; font-size: clamp(2rem, 3.3vw, 2.75rem); letter-spacing: .02em; text-transform: uppercase; margin: 0 0 16px; }
+    .section-copy { color: var(--muted); font-size: 1rem; line-height: 1.75; max-width: 650px; }
+
+    .two-col { display: grid; grid-template-columns: 1.02fr .98fr; gap: 54px; align-items: center; }
+    .about-card {
+      position: relative;
+      padding: 18px;
+      border-radius: calc(var(--radius) + 4px);
+      background: linear-gradient(145deg, rgba(255,255,255,.03), rgba(0,0,0,.16));
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    .about-card img {
+      width: 100%;
+      min-height: 460px;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .about-badge {
+      position: absolute;
+      right: 28px;
+      bottom: 30px;
+      padding: 16px 18px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--red), var(--dark-red));
+      box-shadow: 0 18px 35px rgba(225,6,0,.25);
+      text-align: center;
+    }
+    .about-badge strong { display: block; font-size: 1.7rem; font-family: 'Bebas Neue', 'Montserrat', sans-serif; }
+    .about-badge span { display: block; font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .18em; color: rgba(255,255,255,.88); }
+
+    .feature-list { display: grid; gap: 18px; margin-top: 28px; }
+    .feature-item { display: flex; gap: 14px; align-items: flex-start; }
+    .feature-item b {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(225,6,0,.14);
+      color: var(--red-strong);
+      font-size: .95rem;
+      flex: 0 0 34px;
+      margin-top: 2px;
+    }
+    .feature-item strong { display: block; margin-bottom: 4px; color: #fff; }
+    .feature-item span { color: var(--muted); line-height: 1.65; }
+
+    .fighters { background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.05)); border-block: 1px solid var(--line); }
+    .section-head { display: flex; justify-content: space-between; gap: 22px; align-items: flex-end; margin-bottom: 34px; }
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    .fighter {
+      position: relative;
+      min-height: 560px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #101010;
+      box-shadow: var(--shadow);
+      transition: transform .3s ease, border-color .3s ease;
+    }
+    .fighter:hover { transform: translateY(-6px); border-color: rgba(225,6,0,.36); }
+    .fighter img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform .35s ease;
+    }
+    .fighter:hover img { transform: scale(1.04); }
+    .fighter::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(0deg, rgba(0,0,0,.95) 0%, rgba(0,0,0,.4) 50%, transparent 100%);
+      pointer-events: none;
+    }
+    .fighter-info { position: absolute; inset: auto 18px 18px 18px; z-index: 2; }
+    .fighter-info span { display: inline-block; margin-bottom: 8px; color: var(--red-strong); font-size: .72rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    .fighter-info h3 { font-family: 'Bebas Neue', 'Montserrat', sans-serif; font-size: 1.45rem; letter-spacing: .02em; text-transform: uppercase; margin: 0; }
+
+    .tickets { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 900px; margin: 42px auto 0; }
+    .ticket {
+      position: relative;
+      padding: 34px 30px;
+      background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(0,0,0,.28));
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+    .ticket.vip { border-color: rgba(225,6,0,.5); box-shadow: 0 24px 56px rgba(225,6,0,.18); }
+    .limited {
+      position: absolute;
+      top: -12px;
+      right: 20px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--red), var(--dark-red));
+      color: #fff;
+      font-size: .7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+    }
+    .ticket small { color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: .16em; }
+    .ticket h3 { font-family: 'Bebas Neue', 'Montserrat', sans-serif; font-size: 2rem; letter-spacing: .02em; text-transform: uppercase; margin: 10px 0 16px; }
+    .price { font-family: 'Bebas Neue', 'Montserrat', sans-serif; font-size: 3.6rem; line-height: 1; letter-spacing: .02em; margin-bottom: 10px; }
+    .price sup { font-size: 1.1rem; vertical-align: top; margin-right: 2px; }
+    .price span { font-size: 1.4rem; }
+    .price-caption { color: var(--muted); font-size: .95rem; margin-bottom: 22px; }
+    .ticket ul { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 12px; color: #dedede; }
+    .ticket li { display: flex; align-items: center; gap: 10px; }
+    .ticket li::before { content: '●'; color: var(--red-strong); font-size: 1.05rem; }
+    .ticket .btn { width: 100%; }
+
+    .location { padding-top: 18px; }
+    .location-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 26px;
+      padding: 34px 36px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: linear-gradient(140deg, rgba(255,255,255,.05), rgba(0,0,0,.22));
+      box-shadow: var(--shadow);
+    }
+    .location-card p { color: var(--muted); line-height: 1.8; margin: 0; }
+
+    footer {
+      padding: 36px 0 90px;
+      border-top: 1px solid var(--line);
+      background: rgba(3,3,3,.92);
+    }
+    .footer {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 20px;
+      align-items: center;
+    }
+    .footer img { width: 86px; height: 48px; object-fit: cover; border-radius: 8px; }
+    .footer strong { display: block; font-size: 1rem; }
+    .footer span { display: block; margin-top: 4px; color: var(--muted); font-size: .92rem; }
+    .footer a { color: var(--red-strong); font-weight: 800; }
+
+    .mobile-buy { display: none; }
+
+    .backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      place-items: center;
+      padding: 20px;
+      background: rgba(0,0,0,.84);
+      backdrop-filter: blur(10px);
+    }
+    .backdrop.open { display: grid; }
+    .modal {
+      position: relative;
+      width: min(560px, 100%);
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+      padding: 30px 26px;
+      border-radius: 24px;
+      border: 1px solid rgba(225,6,0,.25);
+      background: linear-gradient(180deg, rgba(16,16,16,.98), rgba(8,8,8,.98));
+      box-shadow: 0 32px 90px rgba(0,0,0,.7);
+    }
+    .close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: rgba(255,255,255,.04);
+      color: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+    }
+    .modal h2 { font-family: 'Bebas Neue', 'Montserrat', sans-serif; font-size: 2rem; margin: 6px 0 8px; text-transform: uppercase; }
+    .intro { color: var(--muted); margin: 0 0 20px; line-height: 1.62; }
+    .form { display: grid; gap: 16px; }
+    .form label { display: grid; gap: 7px; font-size: .85rem; font-weight: 700; color: #e8e8e8; }
+    .form input,
+    .form select {
+      width: 100%;
+      min-height: 50px;
+      padding: 0 14px;
+      color: #fff;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      outline: none;
+    }
+    .form input:focus, .form select:focus { border-color: var(--red-strong); box-shadow: inset 0 0 0 1px rgba(225,6,0,.18); }
+    .form input.invalid, .form select.invalid { border-color: #ff7a7a; box-shadow: 0 0 0 1px rgba(255,122,122,.25); }
+    .quantity { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: .9rem; font-weight: 800; color: #ececec; }
+    .counter { display: flex; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 6px; }
+    .counter button { width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255,255,255,.12); color: #fff; font-size: 1.1rem; cursor: pointer; }
+    .summary { padding: 16px; border-radius: 14px; background: rgba(255,255,255,.05); border: 1px solid var(--line); display: grid; gap: 10px; }
+    .summary div { display: flex; justify-content: space-between; gap: 15px; color: var(--muted); font-size: .94rem; }
+    .summary strong { color: #fff; }
+    .summary .total { border-top: 1px solid rgba(255,255,255,.1); padding-top: 11px; font-size: 1rem; }
+    .summary .total strong { color: var(--red-strong); }
+    .affiliate { display: none; margin-top: 2px; padding: 10px 12px; border-radius: 10px; background: rgba(225,6,0,.1); border: 1px solid rgba(225,6,0,.2); color: #ffb4b2; font-size: .85rem; }
+    .validation-message { display: none; padding: 10px 12px; border-radius: 10px; background: rgba(255,122,122,.12); border: 1px solid rgba(255,122,122,.25); color: #ffd3d3; font-size: .9rem; }
+    .note { text-align: center; color: #a6a6a6; font-size: .8rem; margin: 0; }
+    .success { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(92,214,130,.3); background: rgba(92,214,130,.12); color: #d8ffd9; line-height: 1.6; }
+
+    @media (max-width: 940px) {
+      .nav { display: none; }
+      .two-col { grid-template-columns: 1fr; gap: 34px; }
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      .fighter { min-height: 580px; }
+      .info-grid { grid-template-columns: repeat(2, 1fr); }
+      .info-card + .info-card { border-left: 0; border-top: 1px solid rgba(255,255,255,.08); }
+    }
+
+    @media (max-width: 640px) {
+      :root { --container: min(100% - 24px, 1160px); }
+      header { height: 70px; padding: 0 14px; }
+      .brand-text { display: none; }
+      .logo { width: 82px; height: 44px; }
+      .top-cta { display: none; }
+      .hero { min-height: 86vh; align-items: flex-end; padding-top: 70px; }
+      .hero-content { padding: 48px 0 56px; }
+      .hero h1 { font-size: clamp(2.4rem, 12vw, 3.35rem); }
+      .hero p { font-size: .98rem; }
+      .actions { display: grid; grid-template-columns: 1fr; }
+      .hero-badges { display: grid; gap: 10px; }
+      .hero-badge { justify-content: flex-start; }
+      .info-strip { margin-top: -18px; }
+      .info-grid { grid-template-columns: 1fr; }
+      .info-card { padding: 10px 4px; }
+      section { padding: 76px 0; }
+      .section-head { display: block; }
+      .section-head .section-copy { margin-top: 10px; }
+      .cards { display: flex; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; margin-right: -4px; }
+      .fighter { flex: 0 0 87%; min-height: 520px; scroll-snap-align: start; }
+      .tickets { grid-template-columns: 1fr; }
+      .location-card { display: block; padding: 26px 22px; }
+      .location-card .btn { width: 100%; margin-top: 14px; }
+      .footer { grid-template-columns: 1fr; }
+      .footer a { margin-top: 8px; }
+      .mobile-buy {
+        display: block;
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        z-index: 45;
+        border: 0;
+        min-height: 54px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--red), var(--dark-red));
+        color: #fff;
+        font-weight: 800;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+        box-shadow: 0 18px 34px rgba(0,0,0,.35);
+      }
+      .modal { padding: 24px 18px 20px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <a class="brand" href="#inicio">
+    <img class="logo" src="logo-afc.jpg" alt="Logo AFC" />
+    <span class="brand-text"><strong>Avalanche</strong><span>Fight Championship</span></span>
+  </a>
+  <nav class="nav">
+    <a href="#evento">O evento</a>
+    <a href="#atletas">Atletas</a>
+    <a href="#ingressos">Ingressos</a>
+    <a href="#local">Local</a>
+  </nav>
+  <button class="top-cta" onclick="openCheckout('arquibancada')" aria-label="Comprar ingresso arquibancada">Comprar ingresso</button>
+</header>
+<main>
+  <section class="hero" id="inicio">
+    <div class="container hero-content">
+      <span class="eyebrow">6ª edição • Campo Mourão</span>
+      <h1>O palco onde os <span>guerreiros</span> se tornam lendas.</h1>
+      <p>Uma noite de grandes combates, emoção e adrenalina no Avalanche Fight Championship.</p>
+      <div class="hero-badges">
+        <span class="hero-badge"><strong>15 DE AGOSTO DE 2026</strong></span>
+        <span class="hero-badge">19h • Ginásio de Esportes JK</span>
+        <span class="hero-badge">Campo Mourão - PR</span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="openCheckout('arquibancada')">Garantir meu ingresso</button>
+        <a class="btn btn-secondary" href="#atletas">Ver atletas confirmados</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="info-strip">
+    <div class="container">
+      <div class="info-grid">
+        <article class="info-card">
+          <div class="info-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M7 2h10v2h-1v1h-1v2h1v2h1v2h-1v2h1v2h-1v2h-1v1H8v-1H7v-2h1v-2H7v-2h1v-2H7V7h1V5H7V2Zm2 4v2h2V6h-2Zm0 4v2h2v-2h-2Zm0 4v2h2v-2h-2Zm4-8v2h2V6h-2Zm0 4v2h2v-2h-2Zm0 4v2h2v-2h-2Z" /></svg>
+          </div>
+          <div>
+            <span>Data</span>
+            <strong>15 de agosto de 2026</strong>
+          </div>
+        </article>
+        <article class="info-card">
+          <div class="info-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7Zm0 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" /></svg>
+          </div>
+          <div>
+            <span>Local</span>
+            <strong>Ginásio de Esportes JK</strong>
+          </div>
+        </article>
+        <article class="info-card">
+          <div class="info-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm1 4h-2v7h6v-2h-4V6Z" /></svg>
+          </div>
+          <div>
+            <span>Horário</span>
+            <strong>19h</strong>
+          </div>
+        </article>
+        <article class="info-card">
+          <div class="info-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2 4 5v7c0 5.2 3.4 9.6 8 10 4.6-.4 8-4.8 8-10V5l-8-3Zm0 3.2 5 1.8v5c0 3.6-2.3 6.9-5 7.8-2.7-.9-5-4.2-5-7.8V7l5-1.8Z" /></svg>
+          </div>
+          <div>
+            <span>Cidade</span>
+            <strong>Campo Mourão - PR</strong>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <section id="evento">
+    <div class="container two-col">
+      <div class="about-card">
+        <img src="evento-anterior.jpg" alt="Estrutura da edição anterior do AFC" />
+        <div class="about-badge">
+          <strong>AFC</strong>
+          <span>Experiência ao vivo</span>
+        </div>
+      </div>
+      <div>
+        <span class="eyebrow">Uma noite inesquecível</span>
+        <h2 class="section-title">Prepare-se para sentir cada golpe, cada reação e cada vitória.</h2>
+        <p class="section-copy">O Avalanche Fight Championship retorna a Campo Mourão com uma estrutura preparada para entregar uma experiência intensa do começo ao fim.</p>
+        <div class="feature-list">
+          <div class="feature-item"><b>01</b><div><strong>Combates de alto nível</strong><span>Atletas de diferentes modalidades no mesmo palco.</span></div></div>
+          <div class="feature-item"><b>02</b><div><strong>Estrutura profissional</strong><span>Cage, iluminação e produção para uma grande noite.</span></div></div>
+          <div class="feature-item"><b>03</b><div><strong>Experiência para o público</strong><span>Adrenalina, torcida e emoção ao vivo.</span></div></div>
+        </div>
+        <button class="btn btn-secondary" onclick="openCheckout('arquibancada')">Quero estar lá</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="fighters" id="atletas">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Card confirmado</span>
+          <h2 class="section-title">Atletas que entram em cena</h2>
+        </div>
+        <p class="section-copy">Mais nomes serão anunciados nos canais oficiais do evento.</p>
+      </div>
+      <div class="cards">
+        <article class="fighter"><img src="sidnei.jpg" alt="Sidnei Gonçalo" /><div class="fighter-info"><span>Boxe</span><h3>Sidnei Gonçalo</h3></div></article>
+        <article class="fighter"><img src="daniel.jpg" alt="Daniel Ramos" /><div class="fighter-info"><span>No-Gi Pro</span><h3>Daniel Ramos</h3></div></article>
+        <article class="fighter"><img src="diego.jpg" alt="Diego Hoose Nunes" /><div class="fighter-info"><span>Jiu-Jitsu</span><h3>Diego Hoose Nunes</h3></div></article>
+        <article class="fighter"><img src="jhonatan.jpg" alt="Jhonatan Avalanche" /><div class="fighter-info"><span>MMA</span><h3>Jhonatan Avalanche</h3></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="ingressos">
+    <div class="container">
+      <div class="center" style="text-align:center">
+        <span class="eyebrow">Escolha seu lugar</span>
+        <h2 class="section-title">Escolha sua experiência</h2>
+        <p class="section-copy" style="margin:0 auto;">Compra simples e rápida. Após a confirmação, o nome do comprador será incluído na lista do evento.</p>
+      </div>
+      <div class="tickets">
+        <article class="ticket">
+          <small>Entrada padrão</small>
+          <h3>Arquibancada</h3>
+          <div class="price"><sup>R$</sup>50<span>,00</span></div>
+          <p class="price-caption">Por pessoa</p>
+          <ul>
+            <li>Acesso ao evento</li>
+            <li>Área de arquibancada</li>
+            <li>Ingresso individual</li>
+          </ul>
+          <button class="btn btn-primary" onclick="openCheckout('arquibancada')">Comprar arquibancada</button>
+        </article>
+        <article class="ticket vip">
+          <span class="limited">Mais exclusivo</span>
+          <small>Experiência privilegiada</small>
+          <h3>Cadeira VIP</h3>
+          <div class="price"><sup>R$</sup>80<span>,00</span></div>
+          <p class="price-caption">Por pessoa</p>
+          <ul>
+            <li>Acesso ao evento</li>
+            <li>Lugar em cadeira</li>
+            <li>Área mais próxima do cage</li>
+          </ul>
+          <button class="btn btn-primary" onclick="openCheckout('vip')">Comprar cadeira VIP</button>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="location" id="local">
+    <div class="container location-card">
+      <div>
+        <span class="eyebrow">Onde será</span>
+        <h2 class="section-title">Ginásio de Esportes JK</h2>
+        <p>Rua Ângelo Amaral, 2 — Jardim Joana D’Arc<br />Campo Mourão — Paraná</p>
+      </div>
+      <a class="btn btn-secondary" target="_blank" rel="noreferrer" href="https://www.google.com/maps/search/?api=1&query=Ginásio+de+Esportes+JK+Campo+Mourão+PR">Abrir no mapa</a>
+    </div>
+  </section>
+</main>
+<footer>
+  <div class="container footer">
+    <img src="logo-afc.jpg" alt="AFC" />
+    <div>
+      <strong>Avalanche Fight Championship</strong>
+      <span>15 de agosto de 2026 • 19h • Campo Mourão</span>
+    </div>
+    <a target="_blank" rel="noreferrer" href="https://www.instagram.com/afc_brasil/">@afc_brasil</a>
+  </div>
+</footer>
+<button class="mobile-buy" onclick="openCheckout('arquibancada')" aria-label="Comprar ingresso">Comprar ingresso</button>
+
+<div class="backdrop" id="backdrop" onclick="closeCheckout(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="close" onclick="closeCheckout()" aria-label="Fechar modal">×</button>
+    <span class="eyebrow">Finalize seu pedido</span>
+    <h2>Comprar ingresso</h2>
+    <p class="intro">Preencha os dados abaixo para seguir ao pagamento seguro.</p>
+    <form class="form" onsubmit="submitOrder(event)">
+      <label>Tipo de ingresso<select id="ticketType" onchange="updateSummary()"><option value="arquibancada">Arquibancada — R$ 50,00</option><option value="vip">Cadeira VIP — R$ 80,00</option></select></label>
+      <label>Nome completo<input id="fullName" required minlength="3" placeholder="Digite seu nome completo" /></label>
+      <label>WhatsApp<input id="phone" required inputmode="tel" maxlength="15" placeholder="(44) 99999-9999" oninput="maskPhone(this)" /></label>
+      <label>E-mail<input id="email" type="email" required autocomplete="email" placeholder="Digite seu e-mail" /></label>
+      <label>CPF<input id="cpf" required inputmode="numeric" maxlength="14" placeholder="000.000.000-00" oninput="maskCpf(this)" /></label>
+      <label>CEP<input id="postalCode" required inputmode="numeric" maxlength="9" placeholder="00000-000" oninput="maskPostalCode(this)" /></label>
+      <label>Número do endereço<input id="addressNumber" required maxlength="20" placeholder="Digite o número" /></label>
+      <div class="quantity"><span>Quantidade</span><div class="counter"><button type="button" onclick="changeQty(-1)">−</button><strong id="qty">1</strong><button type="button" onclick="changeQty(1)">+</button></div></div>
+      <div class="affiliate" id="affiliate"></div>
+      <div class="validation-message" id="validationMessage"></div>
+      <div class="summary"><div><span>Ingresso</span><strong id="summaryType">Arquibancada</strong></div><div><span>Quantidade</span><strong id="summaryQty">1</strong></div><div class="total"><span>Total</span><strong id="summaryTotal">R$ 50,00</strong></div></div>
+      <button class="btn btn-primary" id="submitButton" type="submit">Ir para o pagamento</button>
+      <p class="note">Você será direcionado ao ambiente seguro do Asaas.</p>
+      <div class="success" id="success"></div>
+    </form>
+  </div>
+</div>
+<script>
+  const prices = { arquibancada: 50, vip: 80 };
+  const names = { arquibancada: 'Arquibancada', vip: 'Cadeira VIP' };
+  let quantity = 1;
+  const params = new URLSearchParams(location.search);
+  const incomingRef = params.get('ref');
+  if (incomingRef) localStorage.setItem('afc_ref', incomingRef);
+
+  function money(v) {
+    return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function openCheckout(type) {
+    document.getElementById('ticketType').value = type;
+    quantity = 1;
+    document.getElementById('qty').textContent = quantity;
+    document.getElementById('backdrop').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    const ref = localStorage.getItem('afc_ref');
+    const box = document.getElementById('affiliate');
+    if (ref) {
+      box.style.display = 'block';
+      box.textContent = 'Indicação registrada: ' + ref;
+    } else {
+      box.style.display = 'none';
+    }
+    document.getElementById('success').style.display = 'none';
+    document.getElementById('success').innerHTML = '';
+    document.getElementById('validationMessage').style.display = 'none';
+    document.querySelectorAll('.form input, .form select').forEach((field) => field.classList.remove('invalid'));
+    updateSummary();
+  }
+
+  function closeCheckout(e) {
+    if (e && e.target !== document.getElementById('backdrop')) return;
+    document.getElementById('backdrop').classList.remove('open');
+    document.body.style.overflow = '';
+    document.getElementById('validationMessage').style.display = 'none';
+    document.querySelectorAll('.form input, .form select').forEach((field) => field.classList.remove('invalid'));
+  }
+
+  function changeQty(delta) {
+    quantity = Math.max(1, Math.min(10, quantity + delta));
+    document.getElementById('qty').textContent = quantity;
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const type = document.getElementById('ticketType').value;
+    document.getElementById('summaryType').textContent = names[type];
+    document.getElementById('summaryQty').textContent = quantity;
+    document.getElementById('summaryTotal').textContent = money(prices[type] * quantity);
+  }
+
+  function maskPhone(field) {
+    const digits = field.value.replace(/\D/g, '').slice(0, 11);
+    field.value = digits
+      .replace(/^(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{4,5})(\d{4})$/, '$1-$2');
+  }
+
+  function maskCpf(field) {
+    const digits = field.value.replace(/\D/g, '').slice(0, 11);
+    field.value = digits
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  }
+
+  function maskPostalCode(field) {
+    const digits = field.value.replace(/\D/g, '').slice(0, 8);
+    field.value = digits.replace(/(\d{5})(\d)/, '$1-$2');
+  }
+
+  function isValidCpf(value) {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
+
+    const calculateDigit = (length) => {
+      let sum = 0;
+      for (let i = 0; i < length; i += 1) {
+        sum += Number(digits[i]) * (length + 1 - i);
+      }
+      const remainder = (sum * 10) % 11;
+      return remainder === 10 ? 0 : remainder;
+    };
+
+    return calculateDigit(9) === Number(digits[9]) && calculateDigit(10) === Number(digits[10]);
+  }
+
+  async function submitOrder(e) {
+    e.preventDefault();
+    const name = document.getElementById('fullName').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const cpf = document.getElementById('cpf').value.trim();
+    const postalCode = document.getElementById('postalCode').value.trim();
+    const addressNumber = document.getElementById('addressNumber').value.trim();
+    const type = document.getElementById('ticketType').value;
+    const ref = localStorage.getItem('afc_ref') || 'Venda direta';
+    const validationMessage = document.getElementById('validationMessage');
+    const fields = [document.getElementById('fullName'), document.getElementById('phone'), document.getElementById('email'), document.getElementById('cpf'), document.getElementById('postalCode'), document.getElementById('addressNumber')];
+
+    fields.forEach((field) => field.classList.remove('invalid'));
+    validationMessage.style.display = 'none';
+
+    if (!name || name.length < 3) {
+      validationMessage.textContent = 'Informe seu nome completo para continuar.';
+      validationMessage.style.display = 'block';
+      document.getElementById('fullName').classList.add('invalid');
+      return;
+    }
+
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+      validationMessage.textContent = 'Informe um WhatsApp válido para continuar.';
+      validationMessage.style.display = 'block';
+      document.getElementById('phone').classList.add('invalid');
+      return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+      validationMessage.textContent = 'Informe um e-mail válido para continuar.';
+      validationMessage.style.display = 'block';
+      document.getElementById('email').classList.add('invalid');
+      return;
+    }
+
+    const cpfDigits = cpf.replace(/\D/g, '');
+    if (!isValidCpf(cpfDigits)) {
+      validationMessage.textContent = 'Informe um CPF válido para continuar.';
+      validationMessage.style.display = 'block';
+      document.getElementById('cpf').classList.add('invalid');
+      return;
+    }
+
+    const postalCodeDigits = postalCode.replace(/\D/g, '');
+    if (postalCodeDigits.length !== 8) {
+      validationMessage.textContent = 'Informe um CEP válido para continuar.';
+      validationMessage.style.display = 'block';
+      document.getElementById('postalCode').classList.add('invalid');
+      return;
+    }
+
+    if (!addressNumber) {
+      validationMessage.textContent = 'Informe o número do endereço para continuar.';
+      validationMessage.style.display = 'block';
+      document.getElementById('addressNumber').classList.add('invalid');
+      return;
+    }
+
+    const submitButton = document.getElementById('submitButton');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Abrindo pagamento...';
+
+    try {
+      const response = await fetch('/api/criar-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: name,
+          telefone: phoneDigits,
+          email,
+          cpfCnpj: cpfDigits,
+          cep: postalCodeDigits,
+          numeroEndereco: addressNumber,
+          tipoIngresso: type,
+          quantidade: quantity,
+          referenciaAfiliado: ref
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.checkoutUrl) {
+        throw new Error(data.error || 'Não foi possível criar o pagamento. Tente novamente.');
+      }
+
+      window.location.href = data.checkoutUrl;
+    } catch (error) {
+      validationMessage.textContent = error.message || 'Não foi possível criar o pagamento. Tente novamente.';
+      validationMessage.style.display = 'block';
+      submitButton.disabled = false;
+      submitButton.textContent = 'Ir para o pagamento';
+    }
+  }
+
+  function handleCheckoutReturn() {
+    const checkoutStatus = params.get('checkout');
+    if (checkoutStatus !== 'sucesso' && checkoutStatus !== 'expirado') return;
+
+    openCheckout('arquibancada');
+    const message = document.getElementById('success');
+    message.style.display = 'block';
+    message.textContent = checkoutStatus === 'sucesso'
+      ? 'O pagamento foi iniciado ou concluído no Asaas. A confirmação definitiva ocorrerá após o processamento do pagamento.'
+      : 'Este checkout expirou. Revise os dados e clique em “Ir para o pagamento” para tentar novamente.';
+    message.scrollIntoView({ block: 'nearest' });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeCheckout();
+  });
+
+  handleCheckoutReturn();
+</script>
+</body>
+</html>
