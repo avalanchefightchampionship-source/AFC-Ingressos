@@ -10,7 +10,8 @@
     "test": "node --test"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.52.1"
+    "@supabase/supabase-js": "^2.52.1",
+    "resend": "^6.17.2"
   },
   "devDependencies": {
     "vercel": "^56.3.1"
