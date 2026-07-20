@@ -117,7 +117,9 @@ export const renderIngressosEmailHtml = ({
                   </tr>
                 </table>
                 <p style="margin:16px 0 12px 0;font-size:14px;line-height:1.7;color:#4b5563;">Quantidade de ingressos: <strong style="color:#111827;">${escapeHtml(String(quantidadeIngressos || 0))}</strong></p>
-                <p style="margin:0 0 16px 0;font-size:14px;line-height:1.7;color:#4b5563;">O PDF completo com todos os ingressos foi anexado a este e-mail.</p>
+                <p style="margin:0 0 8px 0;font-size:14px;line-height:1.7;color:#4b5563;">Os QR Codes presentes neste e-mail devem ser apresentados na entrada.</p>
+                <p style="margin:0 0 8px 0;font-size:14px;line-height:1.7;color:#4b5563;">Cada QR Code é individual e permite apenas uma validação.</p>
+                <p style="margin:0 0 16px 0;font-size:14px;line-height:1.7;color:#4b5563;">Não compartilhe este e-mail ou imagens dos ingressos.</p>
               </td>
             </tr>
             <tr>

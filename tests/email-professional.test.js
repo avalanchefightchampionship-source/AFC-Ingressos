@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PDFDocument } from 'pdf-lib';
 import { createQrCodeImage, createQrCodeDataUrl } from '../lib/qr-code.js';
-import { formatCodigoIngressoParaPdf } from '../lib/codigo-ingresso.js';
-import { buildTicketVisualData, gerarPdfIngressos } from '../services/ingresso-pdf-service.js';
 import { renderIngressosEmailHtml } from '../templates/ingresso-email.js';
 import { enviarIngressosPorEmail } from '../services/email-service.js';
 import { createEmailTestHandler } from '../api/testar-email.js';
@@ -61,69 +58,6 @@ test('gera QR Code em buffer e data URL a partir do conteúdo existente', async 
   assert.match(dataUrl, /^data:image\/png;base64,/);
 });
 
-test('gera PDF com uma página por ingresso', async () => {
-  const pdfBuffer = await gerarPdfIngressos([ingressosBase[0]], {
-    compradorNome: 'João da Silva',
-    eventoNome: 'Avalanche Fight Championship',
-    dataEvento: '15 de agosto de 2026',
-    horarioEvento: '19h',
-    localEvento: 'Ginásio de Esportes JK',
-    enderecoEvento: 'Rua Ângelo Amaral, 2 — Jardim Joana D’Arc, Campo Mourão — Paraná'
-  });
-
-  const pdfDoc = await PDFDocument.load(pdfBuffer);
-  assert.equal(pdfDoc.getPageCount(), 1);
-});
-
-test('gera PDF com várias páginas para vários ingressos', async () => {
-  const pdfBuffer = await gerarPdfIngressos(ingressosBase, {
-    compradorNome: 'João da Silva',
-    eventoNome: 'Avalanche Fight Championship',
-    dataEvento: '15 de agosto de 2026',
-    horarioEvento: '19h',
-    localEvento: 'Ginásio de Esportes JK',
-    enderecoEvento: 'Rua Ângelo Amaral, 2 — Jardim Joana D’Arc, Campo Mourão — Paraná'
-  });
-
-  const pdfDoc = await PDFDocument.load(pdfBuffer);
-  assert.equal(pdfDoc.getPageCount(), ingressosBase.length);
-});
-
-test('gera PDF em formato vertical de ingresso profissional', async () => {
-  const pdfBuffer = await gerarPdfIngressos([ingressosBase[0]], {
-    compradorNome: 'João da Silva',
-    eventoNome: 'Avalanche Fight Championship',
-    dataEvento: '15 de agosto de 2026',
-    horarioEvento: '19h',
-    localEvento: 'Ginásio de Esportes JK',
-    enderecoEvento: 'Rua Ângelo Amaral, 2 — Jardim Joana D’Arc, Campo Mourão — Paraná'
-  });
-
-  const pdfDoc = await PDFDocument.load(pdfBuffer);
-  const page = pdfDoc.getPage(0);
-  const { width, height } = page.getSize();
-  assert.ok(width < height);
-  assert.ok(width > 230 && width < 280);
-  assert.ok(height > 520 && height < 590);
-});
-
-test('monta dados visuais do ingresso sem expor dados internos', () => {
-  const data = buildTicketVisualData(ingressosBase[0], {
-    compradorNome: 'João da Silva',
-    eventoNome: 'Avalanche Fight Championship',
-    dataEvento: '15 de agosto de 2026',
-    horarioEvento: '19h',
-    localEvento: 'Ginásio de Esportes JK',
-    enderecoEvento: 'Rua Ângelo Amaral, 2 — Jardim Joana D’Arc, Campo Mourão — Paraná'
-  }, 1, 2);
-
-  assert.equal(data.visualCode, formatCodigoIngressoParaPdf(ingressosBase[0].codigo_ingresso));
-  assert.equal(data.positionLabel, 'Ingresso 1 de 2');
-  assert.ok(!data.displayCode.includes(ingressosBase[0].codigo_ingresso));
-  assert.ok(!data.displayCode.includes(ingressosBase[0].pedido_id));
-  assert.ok(!data.displayCode.includes(ingressosBase[0].status));
-});
-
 test('renderiza HTML com dados do comprador e cartões dos ingressos', () => {
   const html = renderIngressosEmailHtml({
     compradorNome: 'João da Silva',
@@ -147,7 +81,7 @@ test('renderiza HTML com dados do comprador e cartões dos ingressos', () => {
   assert.match(html, /Arquibancada/);
 });
 
-test('envia e-mail profissional com mock do Resend e anexa PDF', async () => {
+test('envia e-mail profissional com mock do Resend sem anexar PDF e preserva QR Codes inline', async () => {
   const sent = [];
   const response = await enviarIngressosPorEmail({
     comprador: { nome: 'João da Silva' },
@@ -175,7 +109,13 @@ test('envia e-mail profissional com mock do Resend e anexa PDF', async () => {
   assert.equal(response, 'mocked-id');
   assert.equal(sent.length, 1);
   assert.equal(sent[0].subject, 'Seus ingressos — Avalanche Fight Championship');
-  assert.ok(sent[0].attachments.some((attachment) => attachment.filename === 'ingressos-afc.pdf'));
+  assert.ok(sent[0].attachments.every((attachment) => attachment.filename !== 'ingressos-afc.pdf'));
+  const qrAttachments = sent[0].attachments.filter((attachment) => attachment.contentId);
+  assert.equal(qrAttachments.length, ingressosBase.length);
+  assert.ok(sent[0].html.includes('cid:qr-0'));
+  assert.ok(sent[0].html.includes('Cada QR Code é individual'));
+  assert.ok(sent[0].html.includes('Não compartilhe este e-mail'));
+  assert.ok(!sent[0].html.includes('PDF'));
 });
 
 test('usa anexos inline com cid no HTML e exibe código amigável', async () => {

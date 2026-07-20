@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.52.1",
-    "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "resend": "^6.17.2"
   },

@@ -1,8 +1,6 @@
 import { Resend } from 'resend';
 import { createQrCodeImage } from '../lib/qr-code.js';
-import { formatCodigoIngressoParaExibicao } from '../lib/codigo-ingresso.js';
 import { renderIngressosEmailHtml } from '../templates/ingresso-email.js';
-import { gerarPdfIngressos } from './ingresso-pdf-service.js';
 
 const createEmailHtml = (destinatario) => `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -91,14 +89,6 @@ export const enviarIngressosPorEmail = async (payload, options = {}) => {
       contentId: cid
     });
   }
-  const pdfBuffer = await gerarPdfIngressos(ingressosNorm, {
-    compradorNome: comprador?.nome || comprador?.name || '',
-    eventoNome: dadosEvento?.nome || 'Avalanche Fight Championship',
-    dataEvento: dadosEvento?.data || '',
-    horarioEvento: dadosEvento?.horario || '',
-    localEvento: dadosEvento?.local || '',
-    enderecoEvento: dadosEvento?.endereco || ''
-  });
 
   const html = renderIngressosEmailHtml({
     compradorNome: comprador?.nome || comprador?.name || '',
@@ -119,14 +109,7 @@ export const enviarIngressosPorEmail = async (payload, options = {}) => {
     to: [destinatario],
     subject: 'Seus ingressos — Avalanche Fight Championship',
     html,
-    attachments: [
-      ...attachments,
-      {
-        filename: 'ingressos-afc.pdf',
-        content: Buffer.from(pdfBuffer),
-        contentType: 'application/pdf'
-      }
-    ]
+    attachments
   });
 
   if (response.error) {
