@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { PDFDocument } from 'pdf-lib';
 import { createQrCodeImage, createQrCodeDataUrl } from '../lib/qr-code.js';
-import { gerarPdfIngressos } from '../services/ingresso-pdf-service.js';
+import { formatCodigoIngressoParaPdf } from '../lib/codigo-ingresso.js';
+import { buildTicketVisualData, gerarPdfIngressos } from '../services/ingresso-pdf-service.js';
 import { renderIngressosEmailHtml } from '../templates/ingresso-email.js';
 import { enviarIngressosPorEmail } from '../services/email-service.js';
 import { createEmailTestHandler } from '../api/testar-email.js';
@@ -86,6 +87,41 @@ test('gera PDF com várias páginas para vários ingressos', async () => {
 
   const pdfDoc = await PDFDocument.load(pdfBuffer);
   assert.equal(pdfDoc.getPageCount(), ingressosBase.length);
+});
+
+test('gera PDF em formato vertical de ingresso profissional', async () => {
+  const pdfBuffer = await gerarPdfIngressos([ingressosBase[0]], {
+    compradorNome: 'João da Silva',
+    eventoNome: 'Avalanche Fight Championship',
+    dataEvento: '15 de agosto de 2026',
+    horarioEvento: '19h',
+    localEvento: 'Ginásio de Esportes JK',
+    enderecoEvento: 'Rua Ângelo Amaral, 2 — Jardim Joana D’Arc, Campo Mourão — Paraná'
+  });
+
+  const pdfDoc = await PDFDocument.load(pdfBuffer);
+  const page = pdfDoc.getPage(0);
+  const { width, height } = page.getSize();
+  assert.ok(width < height);
+  assert.ok(width > 230 && width < 280);
+  assert.ok(height > 520 && height < 590);
+});
+
+test('monta dados visuais do ingresso sem expor dados internos', () => {
+  const data = buildTicketVisualData(ingressosBase[0], {
+    compradorNome: 'João da Silva',
+    eventoNome: 'Avalanche Fight Championship',
+    dataEvento: '15 de agosto de 2026',
+    horarioEvento: '19h',
+    localEvento: 'Ginásio de Esportes JK',
+    enderecoEvento: 'Rua Ângelo Amaral, 2 — Jardim Joana D’Arc, Campo Mourão — Paraná'
+  }, 1, 2);
+
+  assert.equal(data.visualCode, formatCodigoIngressoParaPdf(ingressosBase[0].codigo_ingresso));
+  assert.equal(data.positionLabel, 'Ingresso 1 de 2');
+  assert.ok(!data.displayCode.includes(ingressosBase[0].codigo_ingresso));
+  assert.ok(!data.displayCode.includes(ingressosBase[0].pedido_id));
+  assert.ok(!data.displayCode.includes(ingressosBase[0].status));
 });
 
 test('renderiza HTML com dados do comprador e cartões dos ingressos', () => {
