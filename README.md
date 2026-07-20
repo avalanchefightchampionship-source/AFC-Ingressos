@@ -39,7 +39,7 @@ npx supabase db push
 ## Fluxo da compra
 
 1. O navegador envia os dados preenchidos no modal para `POST /api/criar-checkout`.
-2. O backend valida e normaliza os dados e calcula o valor oficial: Arquibancada R$ 50,00 ou Cadeira VIP R$ 80,00.
+2. O backend valida e normaliza os dados e calcula o valor oficial: Arquibancada R$ 50,00 ou Cadeira VIP R$ 100,00.
 3. O backend cria o pedido no Supabase com status `AGUARDANDO_PAGAMENTO` e uma `external_reference` única.
 4. Somente após confirmar a gravação, o backend sincroniza o cliente e cria o Checkout Asaas usando a mesma `external_reference`.
 5. O pedido recebe os identificadores do checkout e do cliente Asaas e muda para `CHECKOUT_CRIADO`.
