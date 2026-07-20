@@ -87,7 +87,33 @@ PDF, e-mail, painel e check-in ainda não estão implementados.
 
 ## Teste temporário de e-mail
 
-O endpoint `POST /api/testar-email` é temporário e foi criado apenas para validar a integração com o Resend antes de conectar o envio ao fluxo de pagamento. Ele exige o header `x-afc-test-token` com o valor definido em `EMAIL_TEST_TOKEN` e será removido após a validação do envio.
+O endpoint `POST /api/testar-email` é temporário e foi criado apenas para validar o envio profissional de ingressos antes de conectar o fluxo ao webhook de pagamento. Ele exige o header `x-afc-test-token` com o valor definido em `EMAIL_TEST_TOKEN` e será removido após a integração definitiva.
+
+O teste agora gera um cenário simulando dois ingressos com dados do comprador, evento e QR Code real. O payload aceito é:
+
+```json
+{
+  "email": "destinatario@exemplo.com",
+  "nome": "Nome do comprador"
+}
+```
+
+Em caso de sucesso, a resposta retorna:
+
+```json
+{
+  "success": true,
+  "emailId": "id-do-envio",
+  "quantidadeIngressos": 2
+}
+```
+
+O fluxo não grava ingressos no Supabase, não altera pedidos reais e não chama o webhook. Ele apenas valida:
+
+- e-mail profissional com identidade AFC;
+- QR Code gerado a partir do conteúdo real do ingresso;
+- PDF anexado com todos os ingressos;
+- múltiplos cartões no corpo do e-mail.
 
 ## Webhook Asaas
 

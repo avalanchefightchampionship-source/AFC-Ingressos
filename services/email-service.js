@@ -1,4 +1,7 @@
 import { Resend } from 'resend';
+import { createQrCodeDataUrl } from '../lib/qr-code.js';
+import { renderIngressosEmailHtml } from '../templates/ingresso-email.js';
+import { gerarPdfIngressos } from './ingresso-pdf-service.js';
 
 const createEmailHtml = (destinatario) => `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -20,6 +23,22 @@ const createEmailHtml = (destinatario) => `<!DOCTYPE html>
   </body>
 </html>`;
 
+const isValidEmail = (value) => typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+const normalizeIngressos = (ingressos) => {
+  if (!Array.isArray(ingressos) || ingressos.length === 0) {
+    throw new Error('É necessário informar ao menos um ingresso.');
+  }
+
+  return ingressos.map((ingresso) => ({
+    ...ingresso,
+    codigo_ingresso: ingresso.codigo_ingresso || ingresso.codigo || '',
+    qr_code: ingresso.qr_code || ingresso.qrCode || '',
+    categoria: ingresso.categoria || ingresso.tipo || 'Ingresso',
+    lote: ingresso.lote || null
+  }));
+};
+
 export const enviarEmailTeste = async (destinatario) => {
   const apiKey = process.env.RESEND_API_KEY?.trim();
 
@@ -33,6 +52,67 @@ export const enviarEmailTeste = async (destinatario) => {
     to: [destinatario],
     subject: 'Teste de envio — AFC Events',
     html: createEmailHtml(destinatario)
+  });
+
+  if (response.error) {
+    throw new Error(response.error.message || 'Falha ao enviar e-mail via Resend.');
+  }
+
+  return response.data?.id || null;
+};
+
+export const enviarIngressosPorEmail = async (payload, options = {}) => {
+  const { comprador, email, ingressos, dadosEvento } = payload || {};
+  const { resendClient } = options;
+
+  const apiKey = typeof resendClient === 'undefined' ? process.env.RESEND_API_KEY?.trim() : '';
+  if (!resendClient && !apiKey) {
+    throw new Error('RESEND_API_KEY não configurada.');
+  }
+
+  const destinatario = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  if (!isValidEmail(destinatario)) {
+    throw new Error('E-mail inválido.');
+  }
+
+  const ingressosNorm = normalizeIngressos(ingressos);
+  const qrCodes = [];
+  for (const ingresso of ingressosNorm) {
+    qrCodes.push(await createQrCodeDataUrl(ingresso.qr_code || ingresso.qrCode || ''));
+  }
+  const pdfBuffer = await gerarPdfIngressos(ingressosNorm, {
+    compradorNome: comprador?.nome || comprador?.name || '',
+    eventoNome: dadosEvento?.nome || 'Avalanche Fight Championship',
+    dataEvento: dadosEvento?.data || '',
+    horarioEvento: dadosEvento?.horario || '',
+    localEvento: dadosEvento?.local || '',
+    enderecoEvento: dadosEvento?.endereco || ''
+  });
+
+  const html = renderIngressosEmailHtml({
+    compradorNome: comprador?.nome || comprador?.name || '',
+    eventoNome: dadosEvento?.nome || 'Avalanche Fight Championship',
+    dataEvento: dadosEvento?.data || '',
+    horarioEvento: dadosEvento?.horario || '',
+    localEvento: dadosEvento?.local || '',
+    enderecoEvento: dadosEvento?.endereco || '',
+    quantidadeIngressos: ingressosNorm.length,
+    ingressos: ingressosNorm,
+    qrCodes,
+    dominio: dadosEvento?.dominio || 'https://www.afcevents.com.br'
+  });
+
+  const resend = resendClient || new Resend(apiKey);
+  const response = await resend.emails.send({
+    from: 'AFC Ingressos <ingressos@afcevents.com.br>',
+    to: [destinatario],
+    subject: 'Seus ingressos — Avalanche Fight Championship',
+    html,
+    attachments: [{
+      filename: 'ingressos-afc.pdf',
+      content: Buffer.from(pdfBuffer),
+      contentType: 'application/pdf'
+    }]
   });
 
   if (response.error) {

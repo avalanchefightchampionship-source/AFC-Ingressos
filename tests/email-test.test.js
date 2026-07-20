@@ -25,18 +25,18 @@ const createResponse = () => {
 
 test('endpoint aceita POST válido com token correto', async () => {
   process.env.EMAIL_TEST_TOKEN = 'a'.repeat(32);
-  const handler = createEmailTestHandler(async (destinatario) => ({ id: `sent:${destinatario}` }));
+  const handler = createEmailTestHandler(async (payload) => ({ id: `sent:${payload.email}` }));
   const { response, getStatusCode, getBody } = createResponse();
 
   await handler({
     method: 'POST',
     headers: { 'x-afc-test-token': 'a'.repeat(32) },
-    body: { email: 'teste@example.com' }
+    body: { email: 'teste@example.com', nome: 'João' }
   }, response);
 
   assert.equal(getStatusCode(), 200);
-  assert.equal(getBody().ok, true);
-  assert.equal(getBody().id, 'sent:teste@example.com');
+  assert.equal(getBody().success, true);
+  assert.equal(getBody().emailId, 'sent:teste@example.com');
 });
 
 test('endpoint retorna 401 para token incorreto', async () => {
@@ -47,7 +47,7 @@ test('endpoint retorna 401 para token incorreto', async () => {
   await handler({
     method: 'POST',
     headers: { 'x-afc-test-token': 'token-incorreto' },
-    body: { email: 'teste@example.com' }
+    body: { email: 'teste@example.com', nome: 'João' }
   }, response);
 
   assert.equal(getStatusCode(), 401);
@@ -61,7 +61,7 @@ test('endpoint retorna 400 para e-mail inválido', async () => {
   await handler({
     method: 'POST',
     headers: { 'x-afc-test-token': 'c'.repeat(32) },
-    body: { email: 'email-invalido' }
+    body: { email: 'email-invalido', nome: 'João' }
   }, response);
 
   assert.equal(getStatusCode(), 400);
