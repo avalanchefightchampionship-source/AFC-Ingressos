@@ -85,6 +85,10 @@ Estornos, cancelamentos e chargebacks nunca excluem ingressos. A invalidação a
 
 PDF, e-mail, painel e check-in ainda não estão implementados.
 
+## Teste temporário de e-mail
+
+O endpoint `POST /api/testar-email` é temporário e foi criado apenas para validar a integração com o Resend antes de conectar o envio ao fluxo de pagamento. Ele exige o header `x-afc-test-token` com o valor definido em `EMAIL_TEST_TOKEN` e será removido após a validação do envio.
+
 ## Webhook Asaas
 
 Configure no Asaas o endpoint público `https://SEU-DOMINIO/api/webhook-asaas` e use exatamente o mesmo valor de `ASAAS_WEBHOOK_TOKEN` como token de autenticação. Não reutilize `ASAAS_API_KEY` como token do webhook.
