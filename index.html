@@ -489,6 +489,27 @@
     }
     .form input:focus, .form select:focus { border-color: var(--red-strong); box-shadow: inset 0 0 0 1px rgba(225,6,0,.18); }
     .form input.invalid, .form select.invalid { border-color: #ff7a7a; box-shadow: 0 0 0 1px rgba(255,122,122,.25); }
+    .ticket-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .ticket-option {
+      width: 100%;
+      min-height: 64px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,255,255,.05);
+      color: #fff;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .2s ease, background .2s ease, transform .2s ease;
+    }
+    .ticket-option:hover { transform: translateY(-1px); border-color: rgba(225,6,0,.32); }
+    .ticket-option strong { display: block; font-size: .95rem; margin-bottom: 4px; }
+    .ticket-option span { display: block; color: var(--muted); font-size: .8rem; line-height: 1.45; }
+    .ticket-option.active {
+      border-color: rgba(225,6,0,.45);
+      background: rgba(225,6,0,.14);
+      box-shadow: inset 0 0 0 1px rgba(225,6,0,.18);
+    }
     .quantity { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: .9rem; font-weight: 800; color: #ececec; }
     .counter { display: flex; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 6px; }
     .counter button { width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255,255,255,.12); color: #fff; font-size: 1.1rem; cursor: pointer; }
@@ -513,6 +534,7 @@
 
     @media (max-width: 640px) {
       :root { --container: min(100% - 24px, 1160px); }
+      .ticket-options { grid-template-columns: 1fr; }
       header { height: 70px; padding: 0 14px; }
       .brand-text { display: none; }
       .logo { width: 82px; height: 44px; }
@@ -745,7 +767,14 @@
     <h2>Comprar ingresso</h2>
     <p class="intro">Preencha os dados abaixo para seguir ao pagamento seguro.</p>
     <form class="form" onsubmit="submitOrder(event)">
-      <label>Tipo de ingresso<select id="ticketType" onchange="updateSummary()"><option value="arquibancada">Arquibancada — R$ 50,00</option><option value="vip">Cadeira VIP — R$ 100,00</option></select></label>
+      <label>
+        Tipo de ingresso
+        <div class="ticket-options" role="group" aria-label="Tipo de ingresso">
+          <button type="button" class="ticket-option active" id="ticketOptionArquibancada" onclick="selectTicketType('arquibancada', this)"><strong>Arquibancada</strong><span>R$ 50,00</span></button>
+          <button type="button" class="ticket-option" id="ticketOptionVip" onclick="selectTicketType('vip', this)"><strong>Cadeira VIP</strong><span>R$ 100,00</span></button>
+        </div>
+        <input type="hidden" id="ticketType" value="arquibancada" />
+      </label>
       <label>Nome completo<input id="fullName" required minlength="3" placeholder="Digite seu nome completo" /></label>
       <label>WhatsApp<input id="phone" required inputmode="tel" maxlength="15" placeholder="(44) 99999-9999" oninput="maskPhone(this)" /></label>
       <label>E-mail<input id="email" type="email" required autocomplete="email" placeholder="Digite seu e-mail" /></label>
@@ -774,8 +803,22 @@
     return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
+  function selectTicketType(type, button) {
+    const ticketInput = document.getElementById('ticketType');
+    const options = document.querySelectorAll('.ticket-option');
+
+    ticketInput.value = type;
+    options.forEach((option) => option.classList.remove('active'));
+    if (button) button.classList.add('active');
+    updateSummary();
+  }
+
   function openCheckout(type) {
-    document.getElementById('ticketType').value = type;
+    const selectedButton = type === 'vip'
+      ? document.getElementById('ticketOptionVip')
+      : document.getElementById('ticketOptionArquibancada');
+
+    selectTicketType(type, selectedButton);
     quantity = 1;
     document.getElementById('qty').textContent = quantity;
     document.getElementById('backdrop').classList.add('open');
@@ -815,6 +858,8 @@
     document.getElementById('summaryQty').textContent = quantity;
     document.getElementById('summaryTotal').textContent = money(prices[type] * quantity);
   }
+
+  selectTicketType('arquibancada', document.getElementById('ticketOptionArquibancada'));
 
   function maskPhone(field) {
     const digits = field.value.replace(/\D/g, '').slice(0, 11);
