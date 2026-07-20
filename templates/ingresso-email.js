@@ -12,6 +12,20 @@ const formatTicketType = (categoria) => {
   return String(categoria);
 };
 
+const formatDisplayCode = (value) => {
+  if (!value) return '';
+  const normalized = String(value).trim().toUpperCase();
+  if (!normalized) return '';
+  if (normalized.startsWith('AFC-')) {
+    const token = normalized.replace(/^AFC-?/, '');
+    const compact = token.replace(/[^A-Z0-9]/g, '');
+    if (!compact) return normalized;
+    const chunks = compact.match(/.{1,4}/g) || [];
+    return chunks.length > 0 ? `AFC-${chunks.join('-')}` : normalized;
+  }
+  return normalized;
+};
+
 export const renderIngressosEmailHtml = ({
   compradorNome,
   eventoNome,
@@ -27,7 +41,7 @@ export const renderIngressosEmailHtml = ({
   const cards = (Array.isArray(ingressos) ? ingressos : []).map((ingresso, index) => {
     const tipo = formatTicketType(ingresso.categoria || ingresso.tipo);
     const lote = ingresso.lote ? escapeHtml(ingresso.lote) : '';
-    const codigo = escapeHtml(ingresso.codigo_ingresso || ingresso.codigo || '');
+    const codigo = escapeHtml(formatDisplayCode(ingresso.codigo_ingresso || ingresso.codigo || ''));
     const qrSrc = qrCodes[index] ? escapeHtml(qrCodes[index]) : '';
     const loteMarkup = lote
       ? `<p style="margin:8px 0 0;font-size:13px;color:#6b7280;">Lote: <strong style="color:#111827;">${lote}</strong></p>`
@@ -50,11 +64,11 @@ export const renderIngressosEmailHtml = ({
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse:separate;border-spacing:0;">
                   <tr>
                     <td valign="top" width="120" style="padding-right:16px;">
-                      ${qrSrc ? `<img src="${qrSrc}" alt="QR Code do ingresso" width="110" height="110" style="display:block;border:1px solid #e5e7eb;border-radius:12px;background:#fff;" />` : ''}
+                      ${qrSrc ? `<img src="cid:${qrSrc}" alt="QR Code do ingresso" width="140" height="140" style="display:block;border:1px solid #e5e7eb;border-radius:16px;background:#fff;padding:8px;" />` : ''}
                     </td>
                     <td valign="top" style="font-size:14px;line-height:1.6;color:#4b5563;">
                       <p style="margin:0 0 8px 0;font-weight:700;color:#111827;">QR Code individual</p>
-                      <p style="margin:0;">Use este código para validar o acesso no evento. Este ingresso é único e não deve ser compartilhado.</p>
+                      <p style="margin:0;">Presente este código no acesso para validar o ingresso de forma rápida e segura.</p>
                     </td>
                   </tr>
                 </table>

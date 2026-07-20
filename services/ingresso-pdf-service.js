@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { createQrCodeImage } from '../lib/qr-code.js';
+import { formatCodigoIngressoParaExibicao } from '../lib/codigo-ingresso.js';
 
 const escapeText = (value) => String(value ?? '');
 
@@ -70,7 +71,7 @@ export const gerarPdfIngressos = async (ingressos, dadosEvento = {}) => {
       });
     }
 
-    page.drawText(`Código: ${escapeText(ingresso.codigo_ingresso || ingresso.codigo || '')}`, {
+    page.drawText(`Código: ${escapeText(formatCodigoIngressoParaExibicao(ingresso.codigo_ingresso || ingresso.codigo || ''))}`, {
       x: 72,
       y: height - 246,
       size: 12,
@@ -155,6 +156,14 @@ export const gerarPdfIngressos = async (ingressos, dadosEvento = {}) => {
         color: rgb(0.3, 0.3, 0.3)
       });
     }
+
+    page.drawText('Apresente este ingresso no acesso.', {
+      x: 340,
+      y: 240,
+      size: 10,
+      font,
+      color: rgb(0.42, 0.42, 0.42)
+    });
   }
 
   return pdfDoc.save();

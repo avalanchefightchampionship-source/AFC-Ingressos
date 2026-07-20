@@ -42,7 +42,7 @@ const createTesteIngressos = (nome) => {
       codigo_ingresso: `AFC-${vipToken}`,
       qr_code: `AFC:1:${vipToken}`,
       categoria: 'vip',
-      lote: 'Lote teste',
+      lote: null,
       status: 'VALIDO',
       pedido_id: 'pedido-simulacao'
     },
@@ -50,7 +50,7 @@ const createTesteIngressos = (nome) => {
       codigo_ingresso: `AFC-${pistaToken}`,
       qr_code: `AFC:1:${pistaToken}`,
       categoria: 'arquibancada',
-      lote: 'Lote teste',
+      lote: null,
       status: 'VALIDO',
       pedido_id: 'pedido-simulacao'
     }

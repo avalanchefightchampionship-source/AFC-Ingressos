@@ -142,6 +142,38 @@ test('envia e-mail profissional com mock do Resend e anexa PDF', async () => {
   assert.ok(sent[0].attachments.some((attachment) => attachment.filename === 'ingressos-afc.pdf'));
 });
 
+test('usa anexos inline com cid no HTML e exibe código amigável', async () => {
+  const sent = [];
+  await enviarIngressosPorEmail({
+    comprador: { nome: 'João da Silva' },
+    email: 'cliente@example.com',
+    ingressos: ingressosBase,
+    dadosEvento: {
+      nome: 'Avalanche Fight Championship',
+      data: '15 de agosto de 2026',
+      horario: '19h',
+      local: 'Ginásio de Esportes JK',
+      endereco: 'Rua Ângelo Amaral, 2 — Jardim Joana D’Arc, Campo Mourão — Paraná',
+      dominio: 'https://www.afcevents.com.br'
+    }
+  }, {
+    resendClient: {
+      emails: {
+        send: async (payload) => {
+          sent.push(payload);
+          return { data: { id: 'mocked-id' }, error: null };
+        }
+      }
+    }
+  });
+
+  assert.equal(sent.length, 1);
+  const qrAttachments = sent[0].attachments.filter((attachment) => attachment.contentId);
+  assert.equal(qrAttachments.length, ingressosBase.length);
+  assert.ok(sent[0].html.includes('cid:qr-0'));
+  assert.ok(sent[0].html.includes('AFC-1111-1111-1111-1111'));
+});
+
 test('lança erro claro quando o Resend retorna error', async () => {
   await assert.rejects(
     () => enviarIngressosPorEmail({
