@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Administrativo AFC</title>
+    <style>
+      :root { color-scheme: dark; --bg:#060606; --panel:#111; --panel-2:#171717; --text:#f5f5f5; --muted:#a0a0a0; --accent:#ff2e2e; --border:#2a2a2a; }
+      * { box-sizing:border-box; }
+      body { margin:0; font-family:Arial, Helvetica, sans-serif; background:linear-gradient(135deg,#060606 0%,#121212 100%); color:var(--text); }
+      .shell { max-width:1320px; margin:0 auto; padding:24px; }
+      .card { background:var(--panel); border:1px solid var(--border); border-radius:18px; padding:20px; box-shadow:0 20px 40px rgba(0,0,0,.25); }
+      .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+      .btn { border:0; padding:12px 16px; border-radius:999px; cursor:pointer; font-weight:700; }
+      .btn-primary { background:var(--accent); color:#fff; }
+      .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); margin-bottom:20px; }
+      .metric { background:var(--panel-2); border:1px solid var(--border); border-radius:16px; padding:16px; }
+      .metric .label { color:var(--muted); font-size:13px; margin-bottom:8px; text-transform:uppercase; letter-spacing:.16em; }
+      .metric .value { font-size:24px; font-weight:700; }
+      .list { width:100%; border-collapse:collapse; overflow:hidden; }
+      .list th, .list td { padding:12px; border-bottom:1px solid var(--border); text-align:left; }
+      .list th { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.16em; }
+      .pill { display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:700; background:#202020; color:#fff; }
+      .pill.ok { background:#1d5f33; }
+      .pill.warn { background:#7a4a00; }
+      .pill.bad { background:#7a1f1f; }
+      .hidden { display:none; }
+      form { display:grid; gap:10px; max-width:360px; }
+      input { padding:12px 14px; border-radius:12px; border:1px solid var(--border); background:#0c0c0c; color:#fff; }
+      .auth-box { max-width:420px; margin:56px auto; }
+      .small { color:var(--muted); font-size:13px; }
+      @media (max-width: 680px) { .shell{padding:14px;} .topbar{flex-direction:column; align-items:flex-start; gap:10px;} }
+    </style>
+  </head>
+  <body>
+    <div class="shell" id="app"></div>
+    <script type="module">
+      const app = document.getElementById('app');
+      const state = { authenticated: false, dashboard: null, pedidos: [], loading: true, error: '' };
+
+      const renderLogin = () => {
+        app.innerHTML = `
+          <div class="auth-box card">
+            <h1 style="margin-top:0;">Painel administrativo</h1>
+            <p class="small">Acesso restrito para consulta e acompanhamento das vendas.</p>
+            <form id="loginForm">
+              <input type="password" id="password" placeholder="Senha administrativa" required />
+              <button class="btn btn-primary" type="submit">Entrar</button>
+            </form>
+            <p id="loginError" class="small" style="color:#ff9b9b; min-height:20px;"></p>
+          </div>`;
+        document.getElementById('loginForm').addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const password = document.getElementById('password').value;
+          const response = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+          });
+          if (response.ok) {
+            state.authenticated = true;
+            renderDashboard();
+            return;
+          }
+          const payload = await response.json().catch(() => ({}));
+          document.getElementById('loginError').textContent = payload.error || 'Falha ao entrar.';
+        });
+      };
+
+      const renderDashboard = async () => {
+        app.innerHTML = '<div class="card"><p>Carregando painel...</p></div>';
+        const response = await fetch('/api/admin/dashboard');
+        if (!response.ok) {
+          state.authenticated = false;
+          renderLogin();
+          return;
+        }
+        const payload = await response.json();
+        state.dashboard = payload.dashboard || null;
+        state.pedidos = payload.pedidos || [];
+        app.innerHTML = `
+          <div class="topbar">
+            <div>
+              <h1 style="margin:0;">Painel AFC Events</h1>
+              <p class="small" style="margin:6px 0 0;">Consulta de pedidos, ingressos e status de e-mail.</p>
+            </div>
+            <button id="logoutBtn" class="btn btn-primary">Sair</button>
+          </div>
+          <div class="grid">
+            <div class="metric"><div class="label">Total de pedidos</div><div class="value">${state.dashboard?.totalPedidos ?? 0}</div></div>
+            <div class="metric"><div class="label">Pagos</div><div class="value">${state.dashboard?.pedidosPagos ?? 0}</div></div>
+            <div class="metric"><div class="label">Pendentes</div><div class="value">${state.dashboard?.pedidosPendentes ?? 0}</div></div>
+            <div class="metric"><div class="label">Cancelados</div><div class="value">${state.dashboard?.pedidosCancelados ?? 0}</div></div>
+            <div class="metric"><div class="label">Ingressos emitidos</div><div class="value">${state.dashboard?.totalIngressos ?? 0}</div></div>
+            <div class="metric"><div class="label">Valor vendido</div><div class="value">R$ ${Number(state.dashboard?.valorTotalVendido || 0).toFixed(2)}</div></div>
+            <div class="metric"><div class="label">E-mails enviados</div><div class="value">${state.dashboard?.emailsEnviados ?? 0}</div></div>
+            <div class="metric"><div class="label">Falhas</div><div class="value">${state.dashboard?.emailsFalhas ?? 0}</div></div>
+          </div>
+          <div class="card">
+            <table class="list">
+              <thead>
+                <tr><th>Data</th><th>Comprador</th><th>E-mail</th><th>Qtd.</th><th>Valor</th><th>Status</th><th>E-mail</th></tr>
+              </thead>
+              <tbody>
+                ${(state.pedidos || []).map((pedido) => `
+                  <tr>
+                    <td>${new Date(pedido.created_at).toLocaleString('pt-BR')}</td>
+                    <td>${pedido.nome}</td>
+                    <td>${pedido.email}</td>
+                    <td>${pedido.quantidade}</td>
+                    <td>R$ ${Number(pedido.valor_total || 0).toFixed(2)}</td>
+                    <td><span class="pill">${pedido.status_pagamento}</span></td>
+                    <td><span class="pill ${pedido.status_email === 'enviado' ? 'ok' : pedido.status_email === 'falha' ? 'bad' : 'warn'}">${pedido.status_email}</span></td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+          await fetch('/api/admin/logout', { method: 'POST' });
+          state.authenticated = false;
+          renderLogin();
+        });
+      };
+
+      (async () => {
+        const response = await fetch('/api/admin/login');
+        state.authenticated = response.ok;
+        if (state.authenticated) {
+          renderDashboard();
+          return;
+        }
+        renderLogin();
+      })();
+    </script>
+  </body>
+</html>

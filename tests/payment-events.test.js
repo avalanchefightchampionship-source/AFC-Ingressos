@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createWebhookHandler } from '../api/webhook-asaas.js';
-import { processPaymentEvent } from '../services/payment-events.js';
+import { onPaymentApproved, processPaymentEvent } from '../services/payment-events.js';
 
 const createRepository = ({ pedido = null } = {}) => {
   const updates = [];
@@ -199,4 +199,117 @@ test('evento salvo mas não processado pode ser retomado com reserva atômica', 
   assert.equal(statusCode, 200);
   assert.equal(processCalls, 1);
   assert.equal(markedAsProcessed, true);
+});
+
+test('envio automático após aprovação envia um único e-mail e marca o pedido', async () => {
+  const pedido = {
+    id: 'pedido-email-1',
+    codigo_pedido: 'AFC-EMAIL-1',
+    nome: 'João da Silva',
+    email: 'joao@example.com',
+    status_pagamento: 'AGUARDANDO_PAGAMENTO',
+    status_pedido: 'CHECKOUT_CRIADO',
+    email_enviado: false,
+    email_tentativas: 0
+  };
+  const sentPayloads = [];
+  const updates = [];
+  const emit = async () => [{
+    pedido_id: pedido.id,
+    codigo_ingresso: 'AFC-111111111111111111111111111111111111',
+    categoria: 'vip',
+    status: 'VALIDO',
+    qr_code: 'AFC:1:111111111111111111111111111111111111',
+    quantidade_esperada: 1,
+    categoria_pedido: 'vip'
+  }];
+  const sendEmail = async (payload) => {
+    sentPayloads.push(payload);
+    return { id: 'sent-1' };
+  };
+  const updateEmailStatus = async (pedidoId, data) => {
+    updates.push({ pedidoId, data });
+    Object.assign(pedido, data);
+    return { ...pedido, ...data };
+  };
+
+  const result = await onPaymentApproved({ pedido }, { emit, sendEmail, updateEmailStatus });
+
+  assert.equal(result.emailSent, true);
+  assert.equal(sentPayloads.length, 1);
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].data.email_enviado, true);
+  assert.ok(updates[0].data.email_enviado_em);
+  assert.equal(pedido.email_enviado, true);
+});
+
+test('pedido já marcado como enviado não recebe novo e-mail', async () => {
+  const pedido = {
+    id: 'pedido-email-2',
+    codigo_pedido: 'AFC-EMAIL-2',
+    nome: 'Maria',
+    email: 'maria@example.com',
+    status_pagamento: 'AGUARDANDO_PAGAMENTO',
+    status_pedido: 'CHECKOUT_CRIADO',
+    email_enviado: true,
+    email_tentativas: 0
+  };
+  let sendCalls = 0;
+  const emit = async () => [{
+    pedido_id: pedido.id,
+    codigo_ingresso: 'AFC-222222222222222222222222222222222222',
+    categoria: 'arquibancada',
+    status: 'VALIDO',
+    qr_code: 'AFC:1:222222222222222222222222222222222222',
+    quantidade_esperada: 1,
+    categoria_pedido: 'arquibancada'
+  }];
+  const sendEmail = async () => {
+    sendCalls += 1;
+    return { id: 'sent-2' };
+  };
+  const updateEmailStatus = async () => { throw new Error('não deveria atualizar'); };
+
+  const result = await onPaymentApproved({ pedido }, { emit, sendEmail, updateEmailStatus });
+
+  assert.equal(result.emailSent, false);
+  assert.equal(result.skipped, true);
+  assert.equal(sendCalls, 0);
+});
+
+test('erro no Resend incrementa tentativas e preserva o fluxo', async () => {
+  const pedido = {
+    id: 'pedido-email-3',
+    codigo_pedido: 'AFC-EMAIL-3',
+    nome: 'Carlos',
+    email: 'carlos@example.com',
+    status_pagamento: 'AGUARDANDO_PAGAMENTO',
+    status_pedido: 'CHECKOUT_CRIADO',
+    email_enviado: false,
+    email_tentativas: 0
+  };
+  const updates = [];
+  const emit = async () => [{
+    pedido_id: pedido.id,
+    codigo_ingresso: 'AFC-333333333333333333333333333333333333',
+    categoria: 'vip',
+    status: 'VALIDO',
+    qr_code: 'AFC:1:333333333333333333333333333333333333',
+    quantidade_esperada: 1,
+    categoria_pedido: 'vip'
+  }];
+  const sendEmail = async () => { throw new Error('resend failed'); };
+  const updateEmailStatus = async (pedidoId, data) => {
+    updates.push({ pedidoId, data });
+    Object.assign(pedido, data);
+    return { ...pedido, ...data };
+  };
+
+  const result = await onPaymentApproved({ pedido }, { emit, sendEmail, updateEmailStatus });
+
+  assert.equal(result.emailSent, false);
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].data.email_tentativas, 1);
+  assert.equal(updates[0].data.email_ultimo_erro, 'resend failed');
+  assert.equal(pedido.email_enviado, false);
 });

@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from '../lib/supabase-admin.js';
 
 const TABLE = 'pedidos';
+const PEDIDO_SELECT = 'id, codigo_pedido, status_pagamento, status_pedido, email_enviado, email_enviado_em, email_tentativas, email_ultimo_erro';
 
 export const createPedido = async (pedido) => {
   const { data, error } = await getSupabaseAdmin()
@@ -34,12 +35,10 @@ export const markPedidoCheckoutFailed = async (pedidoId) => {
   if (error) throw error;
 };
 
-const PAYMENT_SELECT = 'id, codigo_pedido, status_pagamento, status_pedido';
-
 export const findPedidoByExternalReference = async (externalReference) => {
   const { data, error } = await getSupabaseAdmin()
     .from(TABLE)
-    .select(PAYMENT_SELECT)
+    .select(PEDIDO_SELECT)
     .eq('external_reference', externalReference)
     .maybeSingle();
 
@@ -50,7 +49,7 @@ export const findPedidoByExternalReference = async (externalReference) => {
 export const findPedidoByPaymentId = async (paymentId) => {
   const { data, error } = await getSupabaseAdmin()
     .from(TABLE)
-    .select(PAYMENT_SELECT)
+    .select(PEDIDO_SELECT)
     .eq('asaas_payment_id', paymentId)
     .maybeSingle();
 
@@ -63,7 +62,19 @@ export const updatePedidoPaymentStatus = async (pedidoId, paymentData) => {
     .from(TABLE)
     .update(paymentData)
     .eq('id', pedidoId)
-    .select('id, codigo_pedido, status_pagamento, status_pedido')
+    .select(PEDIDO_SELECT)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updatePedidoEmailStatus = async (pedidoId, emailData) => {
+  const { data, error } = await getSupabaseAdmin()
+    .from(TABLE)
+    .update(emailData)
+    .eq('id', pedidoId)
+    .select(PEDIDO_SELECT)
     .single();
 
   if (error) throw error;

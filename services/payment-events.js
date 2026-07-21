@@ -1,9 +1,11 @@
 import {
   findPedidoByExternalReference,
   findPedidoByPaymentId,
+  updatePedidoEmailStatus,
   updatePedidoPaymentStatus
 } from '../repositories/pedidos-repository.js';
 import { emitIngressos } from './ingressos-service.js';
+import { enviarIngressosPorEmail } from './email-service.js';
 
 export const PAYMENT_EVENT_STATUS = Object.freeze({
   PAYMENT_CONFIRMED: {
@@ -54,7 +56,76 @@ export const PAYMENT_EVENT_STATUS = Object.freeze({
   }
 });
 
-export const onPaymentApproved = async ({ pedido }) => emitIngressos(pedido.id);
+const buildEmailPayload = (pedido, ingressos) => ({
+  comprador: { nome: pedido?.nome || pedido?.codigo_pedido || 'Comprador' },
+  email: pedido?.email,
+  ingressos,
+  dadosEvento: {
+    nome: process.env.EVENTO_NOME || 'Avalanche Fight Championship',
+    data: process.env.EVENTO_DATA || '15 de agosto de 2026',
+    horario: process.env.EVENTO_HORARIO || '19h',
+    local: process.env.EVENTO_LOCAL || 'Ginásio de Esportes JK',
+    endereco: process.env.EVENTO_ENDERECO || 'Rua Ângelo Amaral, 2 — Jardim Joana D’Arc, Campo Mourão — Paraná',
+    dominio: process.env.SITE_URL || 'https://www.afcevents.com.br'
+  }
+});
+
+export const onPaymentApproved = async (
+  { pedido },
+  {
+    emit = emitIngressos,
+    sendEmail = enviarIngressosPorEmail,
+    updateEmailStatus = updatePedidoEmailStatus
+  } = {}
+) => {
+  const emission = await emit(pedido.id);
+
+  if (pedido?.email_enviado) {
+    return {
+      pedidoId: pedido.id,
+      emailSent: false,
+      skipped: true,
+      quantidade: emission?.quantidade ?? null,
+      ingressos: emission?.ingressos ?? []
+    };
+  }
+
+  try {
+    const emailPayload = buildEmailPayload(pedido, emission.ingressos);
+    const emailResult = await sendEmail(emailPayload);
+    const emailId = typeof emailResult === 'string' ? emailResult : emailResult?.id || null;
+
+    await updateEmailStatus(pedido.id, {
+      email_enviado: true,
+      email_enviado_em: new Date().toISOString(),
+      email_tentativas: (pedido.email_tentativas || 0) + 1,
+      email_ultimo_erro: null
+    });
+
+    return {
+      pedidoId: pedido.id,
+      emailSent: true,
+      emailId,
+      quantidade: emission.quantidade,
+      ingressos: emission.ingressos
+    };
+  } catch (error) {
+    await updateEmailStatus(pedido.id, {
+      email_enviado: false,
+      email_enviado_em: null,
+      email_tentativas: (pedido.email_tentativas || 0) + 1,
+      email_ultimo_erro: error?.message || 'Falha ao enviar e-mail.'
+    });
+
+    return {
+      pedidoId: pedido.id,
+      emailSent: false,
+      emailError: error?.message || 'Falha ao enviar e-mail.',
+      quantidade: emission.quantidade,
+      ingressos: emission.ingressos
+    };
+  }
+};
 
 const defaultRepository = {
   findByExternalReference: findPedidoByExternalReference,

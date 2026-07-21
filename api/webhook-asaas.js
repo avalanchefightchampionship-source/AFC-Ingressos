@@ -24,17 +24,6 @@ const hasValidToken = (receivedToken, expectedToken) => {
   return received.length === expected.length && timingSafeEqual(received, expected);
 };
 
-const logWebhookResult = ({ eventId, eventType, pedido, result }) => {
-  const logger = result === 'PEDIDO_NAO_ENCONTRADO' ? console.error : console.info;
-  logger('Webhook Asaas.', {
-    event_id: eventId,
-    tipo: eventType,
-    pedido,
-    horario: new Date().toISOString(),
-    resultado: result
-  });
-};
-
 export const createWebhookHandler = ({
   saveEvent = saveWebhookEvent,
   claimEvent = claimWebhookEvent,
@@ -82,12 +71,6 @@ export const createWebhookHandler = ({
   }
 
   if (storedEvent.duplicate && storedEvent.processed) {
-    logWebhookResult({
-      eventId,
-      eventType,
-      pedido: null,
-      result: 'EVENTO_DUPLICADO_IGNORADO'
-    });
     return sendJson(response, 200, { received: true, duplicate: true });
   }
 
@@ -106,25 +89,12 @@ export const createWebhookHandler = ({
   }
 
   if (!claimed) {
-    logWebhookResult({
-      eventId,
-      eventType,
-      pedido: null,
-      result: 'EVENTO_JA_EM_PROCESSAMENTO'
-    });
     return sendJson(response, 200, { received: true, duplicate: true });
   }
 
   try {
     const processing = await processEvent(payload);
     await markEventProcessed(storedEvent.id);
-
-    logWebhookResult({
-      eventId,
-      eventType,
-      pedido: processing.codigoPedido || processing.pedidoId,
-      result: processing.result
-    });
 
     return sendJson(response, 200, {
       received: true,
