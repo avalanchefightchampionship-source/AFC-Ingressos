@@ -61,3 +61,27 @@ export const releaseWebhookEvent = async (webhookEventId) => {
 
   if (error) throw error;
 };
+
+export const findWebhookEventByEventId = async (eventId) => {
+  const { data, error } = await getSupabaseAdmin()
+    .from(TABLE)
+    .select('id, event_id, event_type, payload, processed, processing')
+    .eq('event_id', eventId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
+export const reopenWebhookEventForReprocessing = async ({ webhookEventId, eventType }) => {
+  const { data, error } = await getSupabaseAdmin()
+    .from(TABLE)
+    .update({ processed: false, processing: false })
+    .eq('id', webhookEventId)
+    .eq('event_type', eventType)
+    .select('id, processed, processing')
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};

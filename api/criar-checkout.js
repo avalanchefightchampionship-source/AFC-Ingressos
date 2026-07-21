@@ -36,6 +36,16 @@ const normalizeSiteUrl = (value) => {
   return url.href.replace(/\/+$/, '');
 };
 
+const getSupabaseHost = () => {
+  try {
+    const rawUrl = process.env.SUPABASE_URL?.trim() || '';
+    if (!rawUrl) return 'missing';
+    return new URL(rawUrl).host;
+  } catch {
+    return 'invalid';
+  }
+};
+
 export default async function handler(request, response) {
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
@@ -103,7 +113,15 @@ export default async function handler(request, response) {
   const valorTotal = ticket.value * quantidade;
   let pedido;
 
+  console.info('Checkout flow started.', {
+    tipoIngresso,
+    quantidade,
+    hasAffiliateReference: Boolean(affiliateReference),
+    supabaseHost: getSupabaseHost()
+  });
+
   try {
+    console.info('Creating pending order in Supabase.');
     pedido = await createPendingOrder({
       nome: cleanName,
       email: cleanEmail,
@@ -113,6 +131,11 @@ export default async function handler(request, response) {
       quantidade,
       valorTotal,
       refAfiliado: affiliateReference
+    });
+    console.info('Pending order created in Supabase.', {
+      pedidoId: pedido.id,
+      codigoPedido: pedido.codigoPedido,
+      externalReference: pedido.externalReference
     });
   } catch (error) {
     console.error('Falha ao criar pedido antes do checkout.', {
@@ -227,6 +250,12 @@ export default async function handler(request, response) {
     customer: customerId
   };
 
+  console.info('Sending checkout creation to Asaas.', {
+    pedidoId: pedido.id,
+    codigoPedido: pedido.codigoPedido,
+    externalReference: pedido.externalReference
+  });
+
   try {
     const asaasResponse = await fetch(`${apiUrl}/checkouts`, {
       method: 'POST',
@@ -273,6 +302,12 @@ export default async function handler(request, response) {
       await attachCheckoutToOrder(pedido.id, {
         checkoutId: data.id,
         customerId,
+        externalReference: pedido.externalReference
+      });
+      console.info('Order updated with checkout data in Supabase.', {
+        pedidoId: pedido.id,
+        codigoPedido: pedido.codigoPedido,
+        checkoutId: data.id,
         externalReference: pedido.externalReference
       });
     } catch (error) {

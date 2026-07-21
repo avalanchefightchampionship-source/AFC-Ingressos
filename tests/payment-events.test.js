@@ -3,29 +3,47 @@ import test from 'node:test';
 import { createWebhookHandler } from '../api/webhook-asaas.js';
 import { onPaymentApproved, processPaymentEvent } from '../services/payment-events.js';
 
-const createRepository = ({ pedido = null } = {}) => {
+const createRepository = ({
+  byExternalReference = null,
+  byPaymentId = null,
+  byCheckoutId = null
+} = {}) => {
   const updates = [];
+  const calls = {
+    byExternalReference: 0,
+    byPaymentId: 0,
+    byCheckoutId: 0
+  };
   return {
+    calls,
     updates,
     async findByExternalReference() {
-      return pedido;
+      calls.byExternalReference += 1;
+      return byExternalReference;
     },
     async findByPaymentId() {
-      return pedido;
+      calls.byPaymentId += 1;
+      return byPaymentId;
+    },
+    async findByCheckoutId() {
+      calls.byCheckoutId += 1;
+      return byCheckoutId;
     },
     async updatePaymentStatus(pedidoId, paymentData) {
       updates.push({ pedidoId, paymentData });
-      return { ...pedido, ...paymentData };
+      const basePedido = byExternalReference || byPaymentId || byCheckoutId;
+      return { ...basePedido, ...paymentData };
     }
   };
 };
 
-const createEvent = (event, id = `evt_${event}`) => ({
+const createEvent = (event, id = `evt_${event}`, overrides = {}) => ({
   id,
   event,
   payment: {
     id: 'pay_test',
-    externalReference: 'afc-test'
+    externalReference: 'afc-test',
+    ...overrides
   }
 });
 
@@ -37,7 +55,7 @@ const pedido = {
 };
 
 test('pagamento aprovado atualiza o pedido e chama onPaymentApproved', async () => {
-  const repository = createRepository({ pedido });
+  const repository = createRepository({ byExternalReference: pedido });
   let approvedCalls = 0;
 
   const result = await processPaymentEvent(createEvent('PAYMENT_CONFIRMED'), {
@@ -53,7 +71,7 @@ test('pagamento aprovado atualiza o pedido e chama onPaymentApproved', async () 
 });
 
 test('pagamento estornado atualiza os dois status para ESTORNADO', async () => {
-  const repository = createRepository({ pedido });
+  const repository = createRepository({ byExternalReference: pedido });
 
   await processPaymentEvent(createEvent('PAYMENT_REFUNDED'), { repository });
 
@@ -62,7 +80,7 @@ test('pagamento estornado atualiza os dois status para ESTORNADO', async () => {
 });
 
 test('pagamento vencido atualiza os dois status para VENCIDO', async () => {
-  const repository = createRepository({ pedido });
+  const repository = createRepository({ byExternalReference: pedido });
 
   await processPaymentEvent(createEvent('PAYMENT_OVERDUE'), { repository });
 
@@ -131,6 +149,62 @@ test('pedido inexistente é preservado no webhook e endpoint retorna HTTP 200', 
   assert.equal(statusCode, 200);
   assert.equal(body.orderFound, false);
   assert.equal(markedAsProcessed, true);
+});
+
+test('externalReference nulo usa lookup por checkoutSession e salva asaas_payment_id', async () => {
+  const checkoutPedido = {
+    id: 'pedido-checkout-session',
+    codigo_pedido: 'AFC-CHECKOUT-SESSION',
+    status_pagamento: 'AGUARDANDO_PAGAMENTO',
+    status_pedido: 'CHECKOUT_CRIADO',
+    email_enviado: false,
+    email_tentativas: 0
+  };
+  const repository = createRepository({ byCheckoutId: checkoutPedido });
+
+  const result = await processPaymentEvent(
+    createEvent('PAYMENT_RECEIVED', 'evt_checkout_lookup', {
+      externalReference: null,
+      checkoutSession: 'chk_123'
+    }),
+    {
+      repository,
+      approvedHandler: async () => ({ quantidade: 0, ingressos: [] })
+    }
+  );
+
+  assert.equal(result.result, 'PEDIDO_ATUALIZADO');
+  assert.equal(repository.calls.byExternalReference, 0);
+  assert.equal(repository.calls.byPaymentId, 1);
+  assert.equal(repository.calls.byCheckoutId, 1);
+  assert.equal(repository.updates.length, 1);
+  assert.equal(repository.updates[0].paymentData.asaas_payment_id, 'pay_test');
+});
+
+test('lookup por externalReference tem prioridade sobre paymentId e checkoutSession', async () => {
+  const externalPedido = {
+    id: 'pedido-ext',
+    codigo_pedido: 'AFC-EXT',
+    status_pagamento: 'AGUARDANDO_PAGAMENTO',
+    status_pedido: 'CHECKOUT_CRIADO'
+  };
+  const repository = createRepository({
+    byExternalReference: externalPedido,
+    byPaymentId: { id: 'pedido-pay' },
+    byCheckoutId: { id: 'pedido-checkout' }
+  });
+
+  await processPaymentEvent(createEvent('PAYMENT_RECEIVED', 'evt_priority', {
+    externalReference: 'afc-ext',
+    checkoutSession: 'chk_abc'
+  }), {
+    repository,
+    approvedHandler: async () => ({ quantidade: 0, ingressos: [] })
+  });
+
+  assert.equal(repository.calls.byExternalReference, 1);
+  assert.equal(repository.calls.byPaymentId, 0);
+  assert.equal(repository.calls.byCheckoutId, 0);
 });
 
 test('token de webhook inválido retorna HTTP 401 antes de salvar o evento', async () => {

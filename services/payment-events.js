@@ -1,4 +1,5 @@
 import {
+  findPedidoByCheckoutId,
   findPedidoByExternalReference,
   findPedidoByPaymentId,
   updatePedidoEmailStatus,
@@ -128,18 +129,34 @@ export const onPaymentApproved = async (
 };
 
 const defaultRepository = {
+  findByCheckoutId: findPedidoByCheckoutId,
   findByExternalReference: findPedidoByExternalReference,
   findByPaymentId: findPedidoByPaymentId,
   updatePaymentStatus: updatePedidoPaymentStatus
 };
 
-const findPedido = async ({ externalReference, paymentId }, repository) => {
+const maskPaymentId = (value) => {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const normalized = value.trim();
+  if (normalized.length <= 8) return '***';
+  return `***${normalized.slice(-8)}`;
+};
+
+const findPedido = async ({ externalReference, paymentId, checkoutSession }, repository) => {
   if (externalReference) {
     const pedido = await repository.findByExternalReference(externalReference);
     if (pedido) return pedido;
   }
 
-  if (paymentId) return repository.findByPaymentId(paymentId);
+  if (paymentId) {
+    const pedido = await repository.findByPaymentId(paymentId);
+    if (pedido) return pedido;
+  }
+
+  if (checkoutSession && typeof repository.findByCheckoutId === 'function') {
+    return repository.findByCheckoutId(checkoutSession);
+  }
+
   return null;
 };
 
@@ -158,9 +175,26 @@ export const processPaymentEvent = async (
   const externalReference = typeof webhookEvent.payment?.externalReference === 'string'
     ? webhookEvent.payment.externalReference.trim()
     : '';
-  const pedido = await findPedido({ externalReference, paymentId }, repository);
+  const checkoutSession = typeof webhookEvent.payment?.checkoutSession === 'string'
+    ? webhookEvent.payment.checkoutSession.trim()
+    : '';
+  console.info('Processing payment webhook lookup.', {
+    eventType: webhookEvent.event,
+    hasExternalReference: Boolean(externalReference),
+    externalReference: externalReference || null,
+    checkoutSession: checkoutSession || null,
+    paymentIdMasked: maskPaymentId(paymentId)
+  });
+
+  const pedido = await findPedido({ externalReference, paymentId, checkoutSession }, repository);
 
   if (!pedido) {
+    console.warn('Pedido não encontrado para webhook do Asaas.', {
+      eventType: webhookEvent.event,
+      externalReference: externalReference || null,
+      checkoutSession: checkoutSession || null,
+      paymentIdMasked: maskPaymentId(paymentId)
+    });
     return { result: 'PEDIDO_NAO_ENCONTRADO', pedidoId: null, codigoPedido: null };
   }
 
