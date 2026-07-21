@@ -311,6 +311,8 @@ test('envio automático após aprovação envia um único e-mail e marca o pedid
 
   assert.equal(result.emailSent, true);
   assert.equal(sentPayloads.length, 1);
+  assert.equal(sentPayloads[0].email, 'joao@example.com');
+  assert.equal(sentPayloads[0].comprador.nome, 'João da Silva');
   assert.equal(updates.length, 1);
   assert.equal(updates[0].data.email_enviado, true);
   assert.ok(updates[0].data.email_enviado_em);

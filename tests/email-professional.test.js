@@ -108,6 +108,7 @@ test('envia e-mail profissional com mock do Resend sem anexar PDF e preserva QR 
 
   assert.equal(response, 'mocked-id');
   assert.equal(sent.length, 1);
+  assert.deepEqual(sent[0].to, ['cliente@example.com']);
   assert.equal(sent[0].subject, 'Seus ingressos — Avalanche Fight Championship');
   assert.ok(sent[0].attachments.every((attachment) => attachment.filename !== 'ingressos-afc.pdf'));
   const qrAttachments = sent[0].attachments.filter((attachment) => attachment.contentId);
