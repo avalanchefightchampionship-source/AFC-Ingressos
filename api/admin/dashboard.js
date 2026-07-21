@@ -87,7 +87,13 @@ export default async function handler(request, response) {
         status_email: pedido.email_enviado ? 'enviado' : (pedido.email_ultimo_erro ? 'falha' : 'pendente')
       }))
     });
-  } catch (error) {
-    return sendJson(response, 500, { error: 'Falha ao carregar dashboard.' });
-  }
+ } catch (error) {
+  console.error(error);
+
+  return sendJson(response, 500, {
+    error: error.message,
+    stack: process.env.NODE_ENV !== 'production'
+      ? error.stack
+      : undefined
+  });
 }
