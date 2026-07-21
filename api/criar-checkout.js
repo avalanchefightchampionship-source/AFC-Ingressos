@@ -146,7 +146,8 @@ export default async function handler(request, response) {
     mobilePhone: cleanPhone,
     cpfCnpj: cleanCpfCnpj,
     postalCode: cleanPostalCode,
-    addressNumber: cleanAddressNumber
+    addressNumber: cleanAddressNumber,
+    province: 'PR'
   };
 
   let customerId;
