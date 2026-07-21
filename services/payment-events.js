@@ -9,7 +9,8 @@ import { emitIngressos } from './ingressos-service.js';
 import { enviarIngressosPorEmail } from './email-service.js';
 import { sendMetaPurchaseEvent } from './meta-capi-service.js';
 
-const APPROVED_PAYMENT_STATUSES = new Set(['PAGAMENTO_CONFIRMADO', 'PAGO']);
+export const APPROVED_PAYMENT_STATUS_VALUES = Object.freeze(['PAGAMENTO_CONFIRMADO', 'PAGO']);
+export const APPROVED_PAYMENT_STATUSES = new Set(APPROVED_PAYMENT_STATUS_VALUES);
 
 export const PAYMENT_EVENT_STATUS = Object.freeze({
   PAYMENT_CONFIRMED: {
