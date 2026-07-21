@@ -817,6 +817,7 @@
 <script>
   const prices = { arquibancada: 50, vip: 100 };
   const names = { arquibancada: 'Arquibancada', vip: 'Cadeira VIP' };
+  const pixelContentIds = { arquibancada: 'afc-2026-arquibancada', vip: 'afc-2026-vip' };
   let quantity = 1;
   const params = new URLSearchParams(location.search);
   const incomingRef = params.get('ref');
@@ -1006,6 +1007,18 @@
 
       if (!response.ok || !data.checkoutUrl) {
         throw new Error(data.error || 'Não foi possível criar o pagamento. Tente novamente.');
+      }
+
+      if (typeof fbq === 'function') {
+        fbq('track', 'InitiateCheckout', {
+          content_name: 'Avalanche Fight Championship 2026',
+          content_category: 'Ingresso para evento',
+          content_ids: [pixelContentIds[type] || type],
+          content_type: 'product',
+          value: prices[type] * quantity,
+          currency: 'BRL',
+          num_items: quantity
+        });
       }
 
       window.location.href = data.checkoutUrl;
