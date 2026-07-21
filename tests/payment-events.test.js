@@ -70,6 +70,24 @@ test('pagamento aprovado atualiza o pedido e chama onPaymentApproved', async () 
   assert.equal(approvedCalls, 1);
 });
 
+test('pagamento já aprovado não deve sinalizar novo envio de Purchase', async () => {
+  const approvedPedido = {
+    ...pedido,
+    status_pagamento: 'PAGO'
+  };
+  const repository = createRepository({ byExternalReference: approvedPedido });
+  let receivedShouldTrackPurchase = null;
+
+  await processPaymentEvent(createEvent('PAYMENT_CONFIRMED', 'evt_no_duplicate'), {
+    repository,
+    approvedHandler: async ({ shouldTrackPurchase }) => {
+      receivedShouldTrackPurchase = shouldTrackPurchase;
+    }
+  });
+
+  assert.equal(receivedShouldTrackPurchase, false);
+});
+
 test('pagamento estornado atualiza os dois status para ESTORNADO', async () => {
   const repository = createRepository({ byExternalReference: pedido });
 
@@ -388,4 +406,122 @@ test('erro no Resend incrementa tentativas e preserva o fluxo', async () => {
   assert.equal(updates[0].data.email_tentativas, 1);
   assert.equal(updates[0].data.email_ultimo_erro, 'resend failed');
   assert.equal(pedido.email_enviado, false);
+});
+
+test('onPaymentApproved envia Purchase para Meta com dados dinâmicos e segue fluxo', async () => {
+  const pedido = {
+    id: 'pedido-meta-1',
+    codigo_pedido: 'AFC-META-1',
+    nome: 'Ana Paula Souza',
+    email: 'ana@example.com',
+    telefone: '44999998888',
+    tipo_ingresso: 'vip',
+    quantidade: 2,
+    valor_total: 200,
+    status_pagamento: 'PAGO',
+    status_pedido: 'PAGO',
+    email_enviado: false,
+    email_tentativas: 0
+  };
+  const updates = [];
+  const tracked = [];
+  const emit = async () => [{
+    pedido_id: pedido.id,
+    codigo_ingresso: 'AFC-444444444444444444444444444444444444',
+    categoria: 'vip',
+    status: 'VALIDO',
+    qr_code: 'AFC:1:444444444444444444444444444444444444',
+    quantidade_esperada: 2,
+    categoria_pedido: 'vip'
+  }, {
+    pedido_id: pedido.id,
+    codigo_ingresso: 'AFC-555555555555555555555555555555555555',
+    categoria: 'vip',
+    status: 'VALIDO',
+    qr_code: 'AFC:1:555555555555555555555555555555555555',
+    quantidade_esperada: 2,
+    categoria_pedido: 'vip'
+  }];
+  const sendEmail = async () => ({ id: 'email-meta-1' });
+  const updateEmailStatus = async (pedidoId, data) => {
+    updates.push({ pedidoId, data });
+    Object.assign(pedido, data);
+    return { ...pedido, ...data };
+  };
+  const trackPurchase = async (payload) => {
+    tracked.push(payload);
+    return { sent: true };
+  };
+
+  const result = await onPaymentApproved(
+    {
+      pedido,
+      eventId: 'evt_meta_1',
+      paymentId: 'pay_meta_1',
+      shouldTrackPurchase: true
+    },
+    { emit, sendEmail, updateEmailStatus, trackPurchase }
+  );
+
+  assert.equal(result.emailSent, true);
+  assert.equal(tracked.length, 1);
+  assert.equal(tracked[0].pedido.tipo_ingresso, 'vip');
+  assert.equal(tracked[0].pedido.quantidade, 2);
+  assert.equal(tracked[0].eventId, 'evt_meta_1');
+  assert.equal(tracked[0].paymentId, 'pay_meta_1');
+  assert.equal(updates.length, 1);
+});
+
+test('falha na Meta CAPI não impede envio de e-mail', async () => {
+  const pedido = {
+    id: 'pedido-meta-2',
+    codigo_pedido: 'AFC-META-2',
+    nome: 'Bruno Lima',
+    email: 'bruno@example.com',
+    tipo_ingresso: 'arquibancada',
+    quantidade: 1,
+    valor_total: 50,
+    status_pagamento: 'PAGO',
+    status_pedido: 'PAGO',
+    email_enviado: false,
+    email_tentativas: 0
+  };
+  const updates = [];
+  let sendEmailCalls = 0;
+  const emit = async () => [{
+    pedido_id: pedido.id,
+    codigo_ingresso: 'AFC-666666666666666666666666666666666666',
+    categoria: 'arquibancada',
+    status: 'VALIDO',
+    qr_code: 'AFC:1:666666666666666666666666666666666666',
+    quantidade_esperada: 1,
+    categoria_pedido: 'arquibancada'
+  }];
+  const sendEmail = async () => {
+    sendEmailCalls += 1;
+    return { id: 'email-meta-2' };
+  };
+  const updateEmailStatus = async (pedidoId, data) => {
+    updates.push({ pedidoId, data });
+    Object.assign(pedido, data);
+    return { ...pedido, ...data };
+  };
+  const trackPurchase = async () => {
+    throw new Error('meta unavailable');
+  };
+
+  const result = await onPaymentApproved(
+    {
+      pedido,
+      eventId: 'evt_meta_2',
+      paymentId: 'pay_meta_2',
+      shouldTrackPurchase: true
+    },
+    { emit, sendEmail, updateEmailStatus, trackPurchase }
+  );
+
+  assert.equal(result.emailSent, true);
+  assert.equal(sendEmailCalls, 1);
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].data.email_enviado, true);
 });

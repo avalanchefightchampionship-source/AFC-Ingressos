@@ -7,6 +7,9 @@ import {
 } from '../repositories/pedidos-repository.js';
 import { emitIngressos } from './ingressos-service.js';
 import { enviarIngressosPorEmail } from './email-service.js';
+import { sendMetaPurchaseEvent } from './meta-capi-service.js';
+
+const APPROVED_PAYMENT_STATUSES = new Set(['PAGAMENTO_CONFIRMADO', 'PAGO']);
 
 export const PAYMENT_EVENT_STATUS = Object.freeze({
   PAYMENT_CONFIRMED: {
@@ -72,14 +75,40 @@ const buildEmailPayload = (pedido, ingressos) => ({
 });
 
 export const onPaymentApproved = async (
-  { pedido },
+  {
+    pedido,
+    eventId,
+    paymentId,
+    shouldTrackPurchase = true
+  },
   {
     emit = emitIngressos,
     sendEmail = enviarIngressosPorEmail,
-    updateEmailStatus = updatePedidoEmailStatus
+    updateEmailStatus = updatePedidoEmailStatus,
+    trackPurchase = sendMetaPurchaseEvent
   } = {}
 ) => {
   const emission = await emit(pedido.id);
+
+  if (shouldTrackPurchase) {
+    try {
+      await trackPurchase({
+        pedido: {
+          ...pedido,
+          quantidade: Number.isInteger(pedido?.quantidade) ? pedido.quantidade : emission?.quantidade,
+          tipo_ingresso: pedido?.tipo_ingresso || emission?.categoria
+        },
+        eventId,
+        paymentId
+      });
+    } catch (error) {
+      console.error('Falha ao enviar Purchase para Meta CAPI.', {
+        pedidoId: pedido?.id || null,
+        eventId: eventId || null,
+        message: error?.message || 'Erro desconhecido'
+      });
+    }
+  }
 
   if (pedido?.email_enviado) {
     return {
@@ -201,6 +230,7 @@ export const processPaymentEvent = async (
   const statusPedido = mapping.approved && pedido.status_pedido === 'INGRESSOS_EMITIDOS'
     ? 'INGRESSOS_EMITIDOS'
     : mapping.statusPedido;
+  const shouldTrackPurchase = mapping.approved && !APPROVED_PAYMENT_STATUSES.has(pedido.status_pagamento);
   const updatedPedido = await repository.updatePaymentStatus(pedido.id, {
     status_pagamento: mapping.statusPagamento,
     status_pedido: statusPedido,
@@ -213,7 +243,8 @@ export const processPaymentEvent = async (
       pedido: updatedPedido,
       eventId: webhookEvent.id,
       eventType: webhookEvent.event,
-      paymentId: paymentId || null
+      paymentId: paymentId || null,
+      shouldTrackPurchase
     });
   }
 
