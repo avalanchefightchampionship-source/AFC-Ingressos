@@ -20,3 +20,22 @@ export const findIngressosByPedidoId = async (pedidoId) => {
   if (error) throw error;
   return data;
 };
+
+export const findIngressosByPedidoIds = async (pedidoIds) => {
+  const normalizedPedidoIds = Array.isArray(pedidoIds)
+    ? pedidoIds.filter((pedidoId) => typeof pedidoId === 'string' && pedidoId.trim())
+    : [];
+
+  if (normalizedPedidoIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await getSupabaseAdmin()
+    .from('ingressos')
+    .select('pedido_id, codigo_ingresso, qr_code, created_at')
+    .in('pedido_id', normalizedPedidoIds)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+};

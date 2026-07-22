@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from '../lib/supabase-admin.js';
 
 const TABLE = 'pedidos';
 export const PEDIDO_SELECT = 'id, codigo_pedido, nome, email, telefone, tipo_ingresso, quantidade, valor_total, status_pagamento, status_pedido, asaas_payment_id, email_enviado, email_enviado_em, email_tentativas, email_ultimo_erro';
+export const PEDIDO_EXPORT_SELECT = 'id, created_at, codigo_pedido, nome, email, telefone, cpf, tipo_ingresso, quantidade, valor_total, status_pagamento, asaas_checkout_id, asaas_payment_id, ref_afiliado';
 
 export const createPedido = async (pedido) => {
   const { data, error } = await getSupabaseAdmin()
@@ -98,6 +99,25 @@ export const findPedidoByCheckoutId = async (checkoutId) => {
 
   if (error) throw error;
   return data;
+};
+
+export const findPedidosByPaymentStatuses = async (statuses) => {
+  const normalizedStatuses = Array.isArray(statuses)
+    ? statuses.filter((status) => typeof status === 'string' && status.trim())
+    : [];
+
+  if (normalizedStatuses.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await getSupabaseAdmin()
+    .from(TABLE)
+    .select(PEDIDO_EXPORT_SELECT)
+    .in('status_pagamento', normalizedStatuses)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 };
 
 export const updatePedidoPaymentStatus = async (pedidoId, paymentData) => {

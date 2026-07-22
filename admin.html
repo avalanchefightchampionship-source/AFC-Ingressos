@@ -38,6 +38,27 @@
       const app = document.getElementById('app');
       const state = { authenticated: false, dashboard: null, pedidos: [], loading: true, error: '' };
 
+      const getExportFilename = (response) => {
+        const contentDisposition = response.headers.get('content-disposition') || '';
+        const match = contentDisposition.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i);
+        if (match && match[1]) {
+          return decodeURIComponent(match[1].replace(/\"/g, '').trim());
+        }
+        return `compradores-afc-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      };
+
+      const downloadBlob = (blob, fileName) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      };
+
       const renderLogin = () => {
         app.innerHTML = `
           <div class="auth-box card">
@@ -84,8 +105,12 @@
               <h1 style="margin:0;">Painel AFC Events</h1>
               <p class="small" style="margin:6px 0 0;">Consulta de pedidos, ingressos e status de e-mail.</p>
             </div>
-            <button id="logoutBtn" class="btn btn-primary">Sair</button>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button id="exportBtn" class="btn" style="background:#202020; color:#fff;">Exportar compradores</button>
+              <button id="logoutBtn" class="btn btn-primary">Sair</button>
+            </div>
           </div>
+          <p id="exportError" class="small" style="color:#ff9b9b; min-height:20px; margin:0 0 16px;"></p>
           <div class="grid">
             <div class="metric"><div class="label">Total de pedidos</div><div class="value">${state.dashboard?.totalPedidos ?? 0}</div></div>
             <div class="metric"><div class="label">Pagos</div><div class="value">${state.dashboard?.pedidosPagos ?? 0}</div></div>
@@ -115,6 +140,40 @@
               </tbody>
             </table>
           </div>`;
+        document.getElementById('exportBtn').addEventListener('click', async () => {
+          const exportButton = document.getElementById('exportBtn');
+          const exportError = document.getElementById('exportError');
+          const originalText = exportButton.textContent;
+
+          exportButton.disabled = true;
+          exportButton.textContent = 'Exportando...';
+          exportError.textContent = '';
+
+          try {
+            const exportResponse = await fetch('/api/admin/exportar-compradores');
+            if (exportResponse.status === 401) {
+              state.authenticated = false;
+              renderLogin();
+              return;
+            }
+
+            if (!exportResponse.ok) {
+              const payload = await exportResponse.json().catch(() => ({}));
+              throw new Error(payload.error || 'Não foi possível exportar os compradores agora.');
+            }
+
+            const fileName = getExportFilename(exportResponse);
+            const blob = await exportResponse.blob();
+            downloadBlob(blob, fileName);
+          } catch (error) {
+            exportError.textContent = error?.message || 'Não foi possível exportar os compradores agora.';
+          } finally {
+            if (document.getElementById('exportBtn')) {
+              exportButton.disabled = false;
+              exportButton.textContent = originalText;
+            }
+          }
+        });
         document.getElementById('logoutBtn').addEventListener('click', async () => {
           await fetch('/api/admin/logout', { method: 'POST' });
           state.authenticated = false;
