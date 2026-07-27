@@ -3,6 +3,7 @@ import {
   createPendingOrder,
   flagCheckoutFailure
 } from '../services/pedidos-service.js';
+import { buildAsaasCheckoutPayload } from '../services/asaas-checkout-payload.js';
 
 const TICKETS = {
   arquibancada: { name: 'Ingresso Arquibancada', value: 50 },
@@ -231,25 +232,18 @@ export default async function handler(request, response) {
     return sendJson(response, 502, { error: 'Não foi possível preparar os dados do comprador.' });
   }
 
-  const checkoutPayload = {
-    billingTypes: ['PIX', 'CREDIT_CARD'],
-    chargeTypes: ['DETACHED'],
-    minutesToExpire: 60,
+  const checkoutPayload = buildAsaasCheckoutPayload({
+    tipoIngresso,
+    ticket,
+    quantidade,
     externalReference: pedido.externalReference,
+    customerId,
     callback: {
       cancelUrl: buildReturnUrl(),
       expiredUrl: buildReturnUrl('expirado'),
       successUrl: buildReturnUrl('sucesso')
-    },
-    items: [{
-      externalReference: tipoIngresso,
-      name: ticket.name,
-      description: 'Avalanche Fight Championship - 15 de agosto de 2026',
-      quantity: quantidade,
-      value: ticket.value
-    }],
-    customer: customerId
-  };
+    }
+  });
 
   console.info('Sending checkout creation to Asaas.', {
     pedidoId: pedido.id,
