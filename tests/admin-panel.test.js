@@ -97,10 +97,6 @@ const createSupabaseStub = () => {
         in(field, values) {
           calls.push({ table, method: 'in', field, values });
 
-          if (table === 'pedidos' && columns === '*' && field === 'status_pagamento') {
-            return Promise.resolve({ count: 2, error: null });
-          }
-
           if (table === 'pedidos' && columns === 'valor_total' && field === 'status_pagamento') {
             return Promise.resolve({
               data: [
@@ -109,6 +105,32 @@ const createSupabaseStub = () => {
               ],
               error: null
             });
+          }
+
+          if (table === 'pedidos' && field === 'status_pagamento') {
+            return {
+              eq(nextField, nextValue) {
+                calls.push({ table, method: 'eq', field: nextField, value: nextValue });
+
+                if (nextField === 'email_enviado' && nextValue === true) {
+                  return Promise.resolve({ count: 2, error: null });
+                }
+
+                if (nextField === 'email_enviado' && nextValue === false) {
+                  return {
+                    not(notField, operator, notValue) {
+                      calls.push({ table, method: 'not', field: notField, operator, value: notValue });
+                      return Promise.resolve({ count: 0, error: null });
+                    }
+                  };
+                }
+
+                throw new Error(`Consulta eq inesperada após in status: ${nextField}=${nextValue}`);
+              },
+              then(resolve) {
+                resolve({ count: 2, error: null });
+              }
+            };
           }
 
           throw new Error(`Consulta in inesperada: ${table}.${field}`);
@@ -155,6 +177,8 @@ test('dashboard conta e soma todos os status aprovados usados pelo sistema', asy
   assert.equal(result.dashboard.pedidosCancelados, 0);
   assert.equal(result.dashboard.totalIngressos, 2);
   assert.equal(result.dashboard.valorTotalVendido, 300);
+  assert.equal(result.dashboard.emailsEnviados, 2);
+  assert.equal(result.dashboard.emailsFalhas, 0);
   assert.equal(result.dashboard.ppvPagos, 1);
   assert.equal(result.dashboard.ppvTransmissaoPendente, 0);
 

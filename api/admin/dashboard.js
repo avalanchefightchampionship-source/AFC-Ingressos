@@ -56,8 +56,23 @@ export const getDashboardData = async (supabase) => {
   if (valorError) throw valorError;
 
   const valorTotalVendido = (valorData || []).reduce((sum, item) => sum + Number(item.valor_total || 0), 0);
-  const emailsEnviados = (pedidos || []).filter((pedido) => pedido.email_enviado).length;
-  const emailsFalhas = (pedidos || []).filter((pedido) => (pedido.email_tentativas || 0) > 0 && pedido.email_ultimo_erro).length;
+
+  const { count: emailsEnviados, error: emailsEnviadosError } = await supabase
+    .from('pedidos')
+    .select('*', { count: 'exact', head: true })
+    .in('status_pagamento', APPROVED_PAYMENT_STATUS_VALUES)
+    .eq('email_enviado', true);
+
+  if (emailsEnviadosError) throw emailsEnviadosError;
+
+  const { count: emailsFalhas, error: emailsFalhasError } = await supabase
+    .from('pedidos')
+    .select('*', { count: 'exact', head: true })
+    .in('status_pagamento', APPROVED_PAYMENT_STATUS_VALUES)
+    .eq('email_enviado', false)
+    .not('email_ultimo_erro', 'is', null);
+
+  if (emailsFalhasError) throw emailsFalhasError;
 
   const { count: ppvPagos, error: ppvPagosError } = await supabase
     .from('pedidos')
@@ -84,8 +99,8 @@ export const getDashboardData = async (supabase) => {
       pedidosCancelados: pedidosCancelados || 0,
       totalIngressos: totalIngressos || 0,
       valorTotalVendido,
-      emailsEnviados,
-      emailsFalhas,
+      emailsEnviados: emailsEnviados || 0,
+      emailsFalhas: emailsFalhas || 0,
       ppvPagos: ppvPagos || 0,
       ppvTransmissaoPendente: ppvTransmissaoPendente || 0
     },
