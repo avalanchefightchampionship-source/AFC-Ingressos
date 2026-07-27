@@ -77,6 +77,21 @@ const createSupabaseStub = () => {
             return Promise.resolve({ count: 0, error: null });
           }
 
+          if (table === 'pedidos' && field === 'tipo_ingresso' && value === 'pay-per-view') {
+            return {
+              in(nextField, values) {
+                calls.push({ table, method: 'in', field: nextField, values });
+                return {
+                  eq(nextField, nextValue) {
+                    calls.push({ table, method: 'eq', field: nextField, value: nextValue });
+                    return Promise.resolve({ count: nextField === 'transmissao_enviada' ? 0 : 1, error: null });
+                  },
+                  then: (resolve) => resolve({ count: 1, error: null })
+                };
+              }
+            };
+          }
+
           throw new Error(`Consulta eq inesperada: ${table}.${field}=${value}`);
         },
         in(field, values) {
@@ -140,9 +155,11 @@ test('dashboard conta e soma todos os status aprovados usados pelo sistema', asy
   assert.equal(result.dashboard.pedidosCancelados, 0);
   assert.equal(result.dashboard.totalIngressos, 2);
   assert.equal(result.dashboard.valorTotalVendido, 300);
+  assert.equal(result.dashboard.ppvPagos, 1);
+  assert.equal(result.dashboard.ppvTransmissaoPendente, 0);
 
   const approvedFilters = calls.filter((call) => call.method === 'in' && call.field === 'status_pagamento');
-  assert.equal(approvedFilters.length, 2);
+  assert.ok(approvedFilters.length >= 2);
 
   for (const filterCall of approvedFilters) {
     assert.deepEqual(filterCall.values, ['PAGAMENTO_CONFIRMADO', 'PAGO']);

@@ -7,7 +7,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "dev:local": "vercel env run -e production -- vercel dev --yes",
+    "dev:setup": "node scripts/setup-local-env.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.52.1",

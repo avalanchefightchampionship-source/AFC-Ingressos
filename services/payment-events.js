@@ -7,7 +7,10 @@ import {
 } from '../repositories/pedidos-repository.js';
 import { emitIngressos } from './ingressos-service.js';
 import { enviarIngressosPorEmail } from './email-service.js';
+import { enviarConfirmacaoPayPerView, buildEventoDados } from './pay-per-view-service.js';
 import { sendMetaPurchaseEvent } from './meta-capi-service.js';
+
+export const PAY_PER_VIEW_TICKET_TYPE = 'pay-per-view';
 
 export const APPROVED_PAYMENT_STATUS_VALUES = Object.freeze(['PAGAMENTO_CONFIRMADO', 'PAGO']);
 export const APPROVED_PAYMENT_STATUSES = new Set(APPROVED_PAYMENT_STATUS_VALUES);
@@ -65,15 +68,12 @@ const buildEmailPayload = (pedido, ingressos) => ({
   comprador: { nome: pedido?.nome || pedido?.codigo_pedido || 'Comprador' },
   email: pedido?.email,
   ingressos,
-  dadosEvento: {
-    nome: process.env.EVENTO_NOME || 'Avalanche Fight Championship',
-    data: process.env.EVENTO_DATA || '15 de agosto de 2026',
-    horario: process.env.EVENTO_HORARIO || '19h',
-    local: process.env.EVENTO_LOCAL || 'Ginásio de Esportes JK',
-    endereco: process.env.EVENTO_ENDERECO || 'Rua Ângelo Amaral, 2 — Jardim Joana D’Arc, Campo Mourão — Paraná',
-    dominio: process.env.SITE_URL || 'https://www.afcevents.com.br'
-  }
+  pedido,
+  quantidade: pedido?.quantidade,
+  dadosEvento: buildEventoDados()
 });
+
+const isPayPerViewPedido = (pedido) => pedido?.tipo_ingresso === PAY_PER_VIEW_TICKET_TYPE;
 
 export const onPaymentApproved = async (
   {
@@ -85,11 +85,15 @@ export const onPaymentApproved = async (
   {
     emit = emitIngressos,
     sendEmail = enviarIngressosPorEmail,
+    sendPayPerViewConfirmation = enviarConfirmacaoPayPerView,
     updateEmailStatus = updatePedidoEmailStatus,
     trackPurchase = sendMetaPurchaseEvent
   } = {}
 ) => {
-  const emission = await emit(pedido.id);
+  const payPerView = isPayPerViewPedido(pedido);
+  const emission = payPerView
+    ? { quantidade: pedido?.quantidade ?? null, ingressos: [] }
+    : await emit(pedido.id);
 
   if (shouldTrackPurchase) {
     try {
@@ -116,6 +120,7 @@ export const onPaymentApproved = async (
       pedidoId: pedido.id,
       emailSent: false,
       skipped: true,
+      payPerView,
       quantidade: emission?.quantidade ?? null,
       ingressos: emission?.ingressos ?? []
     };
@@ -123,7 +128,9 @@ export const onPaymentApproved = async (
 
   try {
     const emailPayload = buildEmailPayload(pedido, emission.ingressos);
-    const emailResult = await sendEmail(emailPayload);
+    const emailResult = payPerView
+      ? await sendPayPerViewConfirmation(emailPayload)
+      : await sendEmail(emailPayload);
     const emailId = typeof emailResult === 'string' ? emailResult : emailResult?.id || null;
 
     await updateEmailStatus(pedido.id, {
@@ -137,6 +144,7 @@ export const onPaymentApproved = async (
       pedidoId: pedido.id,
       emailSent: true,
       emailId,
+      payPerView,
       quantidade: emission.quantidade,
       ingressos: emission.ingressos
     };
@@ -152,6 +160,7 @@ export const onPaymentApproved = async (
       pedidoId: pedido.id,
       emailSent: false,
       emailError: error?.message || 'Falha ao enviar e-mail.',
+      payPerView,
       quantidade: emission.quantidade,
       ingressos: emission.ingressos
     };

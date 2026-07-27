@@ -6,7 +6,8 @@ import {
 
 const TICKETS = {
   arquibancada: { name: 'Ingresso Arquibancada', value: 50 },
-  vip: { name: 'Ingresso Cadeira VIP', value: 100 }
+  vip: { name: 'Ingresso Cadeira VIP', value: 100 },
+  'pay-per-view': { name: 'Pay-Per-View', value: 35 }
 };
 
 const sendJson = (response, status, body) => {

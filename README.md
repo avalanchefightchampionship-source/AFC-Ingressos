@@ -39,7 +39,7 @@ npx supabase db push
 ## Fluxo da compra
 
 1. O navegador envia os dados preenchidos no modal para `POST /api/criar-checkout`.
-2. O backend valida e normaliza os dados e calcula o valor oficial: Arquibancada R$ 50,00 ou Cadeira VIP R$ 100,00.
+2. O backend valida e normaliza os dados e calcula o valor oficial: Arquibancada R$ 50,00, Cadeira VIP R$ 100,00 ou Pay-Per-View R$ 35,00.
 3. O backend cria o pedido no Supabase com status `AGUARDANDO_PAGAMENTO` e uma `external_reference` única.
 4. Somente após confirmar a gravação, o backend sincroniza o cliente e cria o Checkout Asaas usando a mesma `external_reference`.
 5. O pedido recebe os identificadores do checkout e do cliente Asaas e muda para `CHECKOUT_CRIADO`.
@@ -83,7 +83,30 @@ Status preparados para ingressos:
 
 Estornos, cancelamentos e chargebacks nunca excluem ingressos. A invalidação automática desses registros deverá ser implementada em uma etapa posterior usando os status já preparados.
 
-PDF, e-mail, painel e check-in ainda não estão implementados.
+## Pay-Per-View (R$ 35,00)
+
+Terceiro tipo de ingresso para transmissão online. Usa o mesmo checkout, pagamento e webhook dos ingressos físicos, mas **não gera registros em `ingressos`** (sem QR Code de entrada).
+
+### Fluxo de dois e-mails
+
+1. **Confirmação de compra** — enviada automaticamente após pagamento aprovado (`onPaymentApproved`). Template em `templates/pay-per-view-confirmacao-email.js`. Informa que um segundo e-mail com o link chegará perto do evento.
+2. **Link da transmissão** — disparado **manualmente pelo admin** no painel (`admin.html`), via `POST /api/admin/pay-per-view/enviar-transmissao` com `{ link, reenviar }`. Template em `templates/pay-per-view-transmissao-email.js`.
+
+### Rastreio no banco
+
+Colunas em `pedidos`:
+
+- `transmissao_link`
+- `transmissao_enviada`
+- `transmissao_enviada_em`
+- `transmissao_tentativas`
+- `transmissao_ultimo_erro`
+
+Por padrão, o envio em massa considera apenas pedidos Pay-Per-View aprovados com `transmissao_enviada = false`. Com `reenviar: true`, inclui todos os aprovados.
+
+### Migration
+
+A migration `20260727000100_add_pay_per_view_support.sql` altera a constraint `pedidos_tipo_ingresso_check` e adiciona as colunas de transmissão.
 
 ## Teste temporário de e-mail
 
@@ -135,7 +158,7 @@ Eventos preparados:
 - `PAYMENT_AWAITING_CHARGEBACK_REVERSAL`
 - `PAYMENT_DUNNING_REQUESTED`
 
-`onPaymentApproved()` emite os registros de ingresso e seus conteúdos individuais de QR Code. Ela ainda não gera imagem, PDF nem envia e-mail.
+`onPaymentApproved()` emite ingressos físicos (arquibancada/vip) ou envia confirmação Pay-Per-View, conforme `tipo_ingresso`. Para ingressos físicos, gera QR Code e envia e-mail; para Pay-Per-View, pula a emissão de ingresso.
 
 Execute os testes simulados com:
 

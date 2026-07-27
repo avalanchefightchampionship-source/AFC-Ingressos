@@ -120,22 +120,44 @@
             <div class="metric"><div class="label">Valor vendido</div><div class="value">R$ ${Number(state.dashboard?.valorTotalVendido || 0).toFixed(2)}</div></div>
             <div class="metric"><div class="label">E-mails enviados</div><div class="value">${state.dashboard?.emailsEnviados ?? 0}</div></div>
             <div class="metric"><div class="label">Falhas</div><div class="value">${state.dashboard?.emailsFalhas ?? 0}</div></div>
+            <div class="metric"><div class="label">PPV pagos</div><div class="value">${state.dashboard?.ppvPagos ?? 0}</div></div>
+            <div class="metric"><div class="label">PPV transmissão pendente</div><div class="value">${state.dashboard?.ppvTransmissaoPendente ?? 0}</div></div>
+          </div>
+          <div class="card" style="margin-bottom:20px;">
+            <h2 style="margin-top:0;">Pay-Per-View</h2>
+            <p class="small" style="margin:0 0 16px;">Dispare o e-mail com o link da transmissão para compradores aprovados do Pay-Per-View.</p>
+            <form id="ppvForm" style="display:grid; gap:12px; max-width:640px;">
+              <label class="small" style="display:grid; gap:6px;">
+                Link da transmissão (HTTPS)
+                <input type="url" id="ppvLink" placeholder="https://youtube.com/live/..." required />
+              </label>
+              <label class="small" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="ppvReenviar" />
+                Reenviar para todos (inclui quem já recebeu)
+              </label>
+              <button class="btn btn-primary" type="submit" id="ppvSendBtn">Enviar e-mail para compradores</button>
+            </form>
+            <p id="ppvResult" class="small" style="min-height:20px; margin:12px 0 0;"></p>
           </div>
           <div class="card">
             <table class="list">
               <thead>
-                <tr><th>Data</th><th>Comprador</th><th>E-mail</th><th>Qtd.</th><th>Valor</th><th>Status</th><th>E-mail</th></tr>
+                <tr><th>Data</th><th>Comprador</th><th>Tipo</th><th>E-mail</th><th>Qtd.</th><th>Valor</th><th>Status</th><th>E-mail</th><th>Transmissão</th></tr>
               </thead>
               <tbody>
                 ${(state.pedidos || []).map((pedido) => `
                   <tr>
                     <td>${new Date(pedido.created_at).toLocaleString('pt-BR')}</td>
                     <td>${pedido.nome}</td>
+                    <td>${pedido.tipo_ingresso || '-'}</td>
                     <td>${pedido.email}</td>
                     <td>${pedido.quantidade}</td>
                     <td>R$ ${Number(pedido.valor_total || 0).toFixed(2)}</td>
                     <td><span class="pill">${pedido.status_pagamento}</span></td>
                     <td><span class="pill ${pedido.status_email === 'enviado' ? 'ok' : pedido.status_email === 'falha' ? 'bad' : 'warn'}">${pedido.status_email}</span></td>
+                    <td>${pedido.tipo_ingresso === 'pay-per-view'
+                      ? `<span class="pill ${pedido.transmissao_enviada ? 'ok' : 'warn'}">${pedido.transmissao_enviada ? 'enviada' : 'pendente'}</span>`
+                      : '-'}</td>
                   </tr>`).join('')}
               </tbody>
             </table>
@@ -178,6 +200,50 @@
           await fetch('/api/admin/logout', { method: 'POST' });
           state.authenticated = false;
           renderLogin();
+        });
+        document.getElementById('ppvForm').addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const sendButton = document.getElementById('ppvSendBtn');
+          const resultBox = document.getElementById('ppvResult');
+          const link = document.getElementById('ppvLink').value.trim();
+          const reenviar = document.getElementById('ppvReenviar').checked;
+          const originalText = sendButton.textContent;
+
+          sendButton.disabled = true;
+          sendButton.textContent = 'Enviando...';
+          resultBox.style.color = 'var(--muted)';
+          resultBox.textContent = '';
+
+          try {
+            const response = await fetch('/api/admin/pay-per-view/enviar-transmissao', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ link, reenviar })
+            });
+            const payload = await response.json().catch(() => ({}));
+
+            if (response.status === 401) {
+              state.authenticated = false;
+              renderLogin();
+              return;
+            }
+
+            if (!response.ok) {
+              throw new Error(payload.error || 'Falha ao enviar e-mails de transmissão.');
+            }
+
+            resultBox.style.color = '#b7f5c6';
+            resultBox.textContent = `Total: ${payload.total ?? 0} • Enviados: ${payload.enviados ?? 0} • Falhas: ${payload.falhas ?? 0}`;
+            await renderDashboard();
+          } catch (error) {
+            resultBox.style.color = '#ff9b9b';
+            resultBox.textContent = error?.message || 'Falha ao enviar e-mails de transmissão.';
+          } finally {
+            if (document.getElementById('ppvSendBtn')) {
+              sendButton.disabled = false;
+              sendButton.textContent = originalText;
+            }
+          }
         });
       };
 

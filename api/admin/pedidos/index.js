@@ -48,7 +48,7 @@ export default async function handler(request, response) {
     const supabase = getSupabaseAdmin();
     let query = supabase
       .from('pedidos')
-      .select('id, codigo_pedido, nome, email, telefone, quantidade, valor_total, status_pagamento, status_pedido, created_at, external_reference, ref_afiliado, email_enviado, email_enviado_em, email_tentativas, email_ultimo_erro', { count: 'exact' })
+      .select('id, codigo_pedido, nome, email, telefone, tipo_ingresso, quantidade, valor_total, status_pagamento, status_pedido, created_at, external_reference, ref_afiliado, email_enviado, email_enviado_em, email_tentativas, email_ultimo_erro, transmissao_link, transmissao_enviada, transmissao_enviada_em, transmissao_tentativas, transmissao_ultimo_erro', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + safeLimite - 1);
 

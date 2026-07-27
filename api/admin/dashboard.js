@@ -9,7 +9,7 @@ const sendJson = (response, status, body) => {
 export const getDashboardData = async (supabase) => {
   const { data: pedidos, error: pedidosError } = await supabase
     .from('pedidos')
-    .select('id, nome, email, quantidade, valor_total, created_at, status_pagamento, email_enviado, email_tentativas, email_ultimo_erro')
+    .select('id, nome, email, quantidade, valor_total, created_at, status_pagamento, tipo_ingresso, email_enviado, email_tentativas, email_ultimo_erro, transmissao_enviada, transmissao_tentativas, transmissao_ultimo_erro')
     .order('created_at', { ascending: false })
     .limit(10);
 
@@ -59,6 +59,23 @@ export const getDashboardData = async (supabase) => {
   const emailsEnviados = (pedidos || []).filter((pedido) => pedido.email_enviado).length;
   const emailsFalhas = (pedidos || []).filter((pedido) => (pedido.email_tentativas || 0) > 0 && pedido.email_ultimo_erro).length;
 
+  const { count: ppvPagos, error: ppvPagosError } = await supabase
+    .from('pedidos')
+    .select('*', { count: 'exact', head: true })
+    .eq('tipo_ingresso', 'pay-per-view')
+    .in('status_pagamento', APPROVED_PAYMENT_STATUS_VALUES);
+
+  if (ppvPagosError) throw ppvPagosError;
+
+  const { count: ppvTransmissaoPendente, error: ppvTransmissaoError } = await supabase
+    .from('pedidos')
+    .select('*', { count: 'exact', head: true })
+    .eq('tipo_ingresso', 'pay-per-view')
+    .in('status_pagamento', APPROVED_PAYMENT_STATUS_VALUES)
+    .eq('transmissao_enviada', false);
+
+  if (ppvTransmissaoError) throw ppvTransmissaoError;
+
   return {
     dashboard: {
       totalPedidos: totalPedidos || 0,
@@ -68,7 +85,9 @@ export const getDashboardData = async (supabase) => {
       totalIngressos: totalIngressos || 0,
       valorTotalVendido,
       emailsEnviados,
-      emailsFalhas
+      emailsFalhas,
+      ppvPagos: ppvPagos || 0,
+      ppvTransmissaoPendente: ppvTransmissaoPendente || 0
     },
     pedidos: (pedidos || []).map((pedido) => ({
       ...pedido,

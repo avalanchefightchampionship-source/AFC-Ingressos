@@ -196,6 +196,37 @@ test('sendMetaPurchaseEvent inclui test_event_code quando configurado', async ()
   });
 });
 
+test('buildPurchaseEvent inclui pay-per-view com preço correto', async () => {
+  await withEnv({ SITE_URL: 'https://www.afcevents.com.br/' }, async () => {
+    const event = __metaCapiInternals.buildPurchaseEvent({
+      pedido: {
+        id: 'pedido-ppv',
+        nome: 'Comprador PPV',
+        email: 'ppv@example.com',
+        telefone: '44999998888',
+        tipo_ingresso: 'pay-per-view',
+        quantidade: 2,
+        valor_total: 70
+      },
+      eventId: 'evt-ppv',
+      paymentId: 'pay-ppv',
+      eventTime: 1_760_000_000
+    });
+
+    assert.deepEqual(event.custom_data.content_ids, ['afc-2026-pay-per-view']);
+    assert.equal(event.custom_data.value, 70);
+    assert.equal(event.custom_data.num_items, 2);
+  });
+});
+
+test('resolveValue calcula pay-per-view quando valor_total ausente', () => {
+  const value = __metaCapiInternals.resolveValue(
+    { tipo_ingresso: 'pay-per-view', quantidade: 3 },
+    3
+  );
+  assert.equal(value, 105);
+});
+
 test('falha da Meta retorna sent=false e não lança erro', async () => {
   await withEnv({
     META_PIXEL_ID: '3169175496623984',

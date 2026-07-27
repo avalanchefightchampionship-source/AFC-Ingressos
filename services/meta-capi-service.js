@@ -3,11 +3,13 @@ import { createHash } from 'node:crypto';
 const META_API_BASE = 'https://graph.facebook.com/v20.0';
 const PURCHASE_CONTENT_IDS = {
   arquibancada: 'afc-2026-arquibancada',
-  vip: 'afc-2026-vip'
+  vip: 'afc-2026-vip',
+  'pay-per-view': 'afc-2026-pay-per-view'
 };
 const PURCHASE_PRICE_BY_TYPE = {
   arquibancada: 50,
-  vip: 100
+  vip: 100,
+  'pay-per-view': 35
 };
 
 const normalizeText = (value) => {
