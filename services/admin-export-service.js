@@ -51,10 +51,16 @@ const mapIngressosByPedidoId = (ingressos) => {
 export const buildCompradoresExportRows = (pedidos, ingressos) => {
   const ingressosByPedidoId = mapIngressosByPedidoId(ingressos);
 
-  return (pedidos || []).flatMap((pedido) => {
-    const pedidoIngressos = ingressosByPedidoId.get(pedido.id) || [null];
+  return (pedidos || []).map((pedido) => {
+    const pedidoIngressos = ingressosByPedidoId.get(pedido.id) || [];
+    const codigosIngresso = pedidoIngressos
+      .map((ingresso) => ingresso?.codigo_ingresso || '')
+      .filter(Boolean);
+    const qrCodes = pedidoIngressos
+      .map((ingresso) => ingresso?.qr_code || '')
+      .filter(Boolean);
 
-    return pedidoIngressos.map((ingresso) => ({
+    return {
       'Data da compra': formatDateTime(pedido.created_at),
       'Código do pedido': pedido.codigo_pedido || '',
       'Nome': pedido.nome || '',
@@ -65,12 +71,12 @@ export const buildCompradoresExportRows = (pedidos, ingressos) => {
       'Quantidade': Number(pedido.quantidade || 0),
       'Valor pago': Number(pedido.valor_total || 0),
       'Status do pagamento': pedido.status_pagamento || '',
-      'Código do ingresso': ingresso?.codigo_ingresso || '',
-      'QR Code': ingresso?.qr_code || '',
+      'Código do ingresso': codigosIngresso.join('; '),
+      'QR Code': qrCodes.join('; '),
       'Código do checkout Asaas': pedido.asaas_checkout_id || '',
       'Código do pagamento Asaas': pedido.asaas_payment_id || '',
       'Referência do afiliado': pedido.ref_afiliado || ''
-    }));
+    };
   });
 };
 

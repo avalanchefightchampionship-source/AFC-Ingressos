@@ -144,19 +144,21 @@ test('exporta apenas compradores aprovados, usa APPROVED_PAYMENT_STATUS_VALUES, 
   assert.strictEqual(receivedStatuses, APPROVED_PAYMENT_STATUS_VALUES);
 
   const rows = readWorkbookRows(buffer);
-  assert.equal(rows.length, 3);
+  assert.equal(rows.length, 2);
   assert.deepEqual(Object.keys(rows[0]), COMPRADORES_EXPORT_HEADERS);
   assert.equal(rows[0]['Código do pedido'], 'AFC-0002');
-  assert.equal(rows[1]['Código do pedido'], 'AFC-0002');
-  assert.equal(rows[2]['Código do pedido'], 'AFC-0001');
+  assert.equal(rows[1]['Código do pedido'], 'AFC-0001');
+  assert.equal(rows[0]['Quantidade'], 2);
   assert.equal(rows[0]['Status do pagamento'], 'PAGAMENTO_CONFIRMADO');
-  assert.equal(rows[2]['Status do pagamento'], 'PAGO');
+  assert.equal(rows[1]['Status do pagamento'], 'PAGO');
   assert.equal(rows.some((row) => row['Status do pagamento'] === 'AGUARDANDO_PAGAMENTO'), false);
   assert.equal(rows.some((row) => row['Status do pagamento'] === 'CANCELADO'), false);
   assert.equal(rows[0]['Código do checkout Asaas'], 'chk_2');
   assert.equal(rows[0]['Código do pagamento Asaas'], 'pay_2');
   assert.equal(rows[0]['Referência do afiliado'], 'AFILIADO-1');
-  assert.equal(rows[0]['QR Code'], 'AFC:1:222222222222222222222222222222222222');
+  assert.equal(rows[0]['Código do ingresso'], 'ING-2A; ING-2B');
+  assert.match(rows[0]['QR Code'], /222222222222222222222222222222222222/);
+  assert.match(rows[0]['QR Code'], /BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB/);
 });
 
 test('exporta todos os compradores aprovados sem limite de 10 e mantém ordenação por data decrescente', async () => {
