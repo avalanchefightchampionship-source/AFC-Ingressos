@@ -124,6 +124,22 @@
             <div class="metric"><div class="label">PPV transmissão pendente</div><div class="value">${state.dashboard?.ppvTransmissaoPendente ?? 0}</div></div>
           </div>
           <div class="card" style="margin-bottom:20px;">
+            <h2 style="margin-top:0;">Reenviar ingressos</h2>
+            <p class="small" style="margin:0 0 16px;">Use após corrigir o e-mail de um comprador no Supabase. Reenvia os ingressos já emitidos para o e-mail atual do pedido.</p>
+            <form id="resendForm" style="display:grid; gap:12px; max-width:640px;">
+              <label class="small" style="display:grid; gap:6px;">
+                E-mail do comprador
+                <input type="email" id="resendEmail" placeholder="cliente@email.com" required />
+              </label>
+              <label class="small" style="display:grid; gap:6px;">
+                Código do pedido (opcional)
+                <input type="text" id="resendCodigo" placeholder="AFC-DDB90F82" />
+              </label>
+              <button class="btn btn-primary" type="submit" id="resendBtn">Reenviar ingressos</button>
+            </form>
+            <p id="resendResult" class="small" style="min-height:20px; margin:12px 0 0;"></p>
+          </div>
+          <div class="card" style="margin-bottom:20px;">
             <h2 style="margin-top:0;">Pay-Per-View</h2>
             <p class="small" style="margin:0 0 16px;">Dispare o e-mail com o link da transmissão para compradores aprovados do Pay-Per-View.</p>
             <form id="ppvForm" style="display:grid; gap:12px; max-width:640px;">
@@ -200,6 +216,50 @@
           await fetch('/api/admin/logout', { method: 'POST' });
           state.authenticated = false;
           renderLogin();
+        });
+        document.getElementById('resendForm').addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const sendButton = document.getElementById('resendBtn');
+          const resultBox = document.getElementById('resendResult');
+          const email = document.getElementById('resendEmail').value.trim();
+          const codigoPedido = document.getElementById('resendCodigo').value.trim();
+          const originalText = sendButton.textContent;
+
+          sendButton.disabled = true;
+          sendButton.textContent = 'Enviando...';
+          resultBox.style.color = 'var(--muted)';
+          resultBox.textContent = '';
+
+          try {
+            const response = await fetch('/api/admin/pedidos/reenviar-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, codigoPedido: codigoPedido || undefined })
+            });
+            const payload = await response.json().catch(() => ({}));
+
+            if (response.status === 401) {
+              state.authenticated = false;
+              renderLogin();
+              return;
+            }
+
+            if (!response.ok) {
+              throw new Error(payload.error || 'Falha ao reenviar ingressos.');
+            }
+
+            resultBox.style.color = '#b7f5c6';
+            resultBox.textContent = `Enviado para ${payload.email} • Pedido ${payload.codigoPedido} • ${payload.quantidadeIngressos} ingresso(s)`;
+            await renderDashboard();
+          } catch (error) {
+            resultBox.style.color = '#ff9b9b';
+            resultBox.textContent = error?.message || 'Falha ao reenviar ingressos.';
+          } finally {
+            if (document.getElementById('resendBtn')) {
+              sendButton.disabled = false;
+              sendButton.textContent = originalText;
+            }
+          }
         });
         document.getElementById('ppvForm').addEventListener('submit', async (event) => {
           event.preventDefault();
