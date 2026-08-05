@@ -182,6 +182,26 @@ export const findPedidoParaReenvioIngressos = async ({ email, codigoPedido } = {
   return data;
 };
 
+export const findPedidosIngressosFisicosPagos = async ({
+  tipoIngresso = null,
+  approvedStatuses = ['PAGAMENTO_CONFIRMADO', 'PAGO']
+} = {}) => {
+  let query = getSupabaseAdmin()
+    .from(TABLE)
+    .select(PEDIDO_SELECT)
+    .in('tipo_ingresso', ['arquibancada', 'vip'])
+    .in('status_pagamento', approvedStatuses)
+    .order('created_at', { ascending: true });
+
+  if (tipoIngresso) {
+    query = query.eq('tipo_ingresso', tipoIngresso);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+};
+
 export const findPedidosPayPerViewParaTransmissao = async ({
   reenviar = false,
   approvedStatuses = ['PAGAMENTO_CONFIRMADO', 'PAGO']

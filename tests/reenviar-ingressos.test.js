@@ -2,7 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createAdminSessionCookie } from '../lib/admin-auth.js';
 import { createReenviarIngressosHandler } from '../api/admin/pedidos/reenviar-email.js';
-import { reenviarIngressosPorEmail } from '../services/reenviar-ingressos-service.js';
+import { createReenviarIngressosEmMassaHandler } from '../api/admin/pedidos/reenviar-email-em-massa.js';
+import {
+  buildMensagemLembretePadrao,
+  reenviarIngressosEmMassa,
+  reenviarIngressosPorEmail
+} from '../services/reenviar-ingressos-service.js';
 
 const createMockResponse = () => {
   const response = {
@@ -93,6 +98,90 @@ test('endpoint admin reenviar-email retorna sucesso', async () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.body.success, true);
     assert.equal(response.body.codigoPedido, 'AFC-DDB90F82');
+  } finally {
+    process.env.ADMIN_SESSION_SECRET = previousSecret;
+  }
+});
+
+test('buildMensagemLembretePadrao inclui nome do evento', () => {
+  const message = buildMensagemLembretePadrao({ nome: 'Avalanche Fight Championship' });
+  assert.match(message, /10 dias/);
+  assert.match(message, /Avalanche Fight Championship/);
+  assert.match(message, /portaria/i);
+});
+
+test('reenviarIngressosEmMassa envia lembrete para pedidos pagos de ingresso físico', async () => {
+  const pedidos = [
+    {
+      id: 'p1',
+      codigo_pedido: 'AFC-1',
+      nome: 'Ana',
+      email: 'ana@example.com',
+      tipo_ingresso: 'arquibancada',
+      quantidade: 1,
+      status_pagamento: 'PAGO',
+      email_tentativas: 0
+    },
+    {
+      id: 'p2',
+      codigo_pedido: 'AFC-2',
+      nome: 'Bruno',
+      email: 'bruno@example.com',
+      tipo_ingresso: 'vip',
+      quantidade: 2,
+      status_pagamento: 'PAGAMENTO_CONFIRMADO',
+      email_tentativas: 1
+    }
+  ];
+  const payloads = [];
+
+  const resumo = await reenviarIngressosEmMassa(
+    { mensagemDestaque: 'Faltam apenas 10 dias para o AFC! Mostre seus ingressos na portaria.' },
+    {
+      listarPedidos: async () => pedidos,
+      listarIngressos: async (pedidoId) => [{
+        pedido_id: pedidoId,
+        codigo_ingresso: `ING-${pedidoId}`,
+        qr_code: 'AFC:1:111111111111111111111111111111111111',
+        categoria: pedidoId === 'p2' ? 'vip' : 'arquibancada'
+      }],
+      enviarEmail: async (payload) => {
+        payloads.push(payload);
+        return 'email-id';
+      },
+      atualizarStatus: async () => ({})
+    }
+  );
+
+  assert.equal(resumo.total, 2);
+  assert.equal(resumo.enviados, 2);
+  assert.equal(resumo.falhas, 0);
+  assert.equal(payloads.length, 2);
+  assert.equal(payloads[0].mensagemDestaque, 'Faltam apenas 10 dias para o AFC! Mostre seus ingressos na portaria.');
+  assert.equal(payloads[1].email, 'bruno@example.com');
+});
+
+test('endpoint admin reenviar-email-em-massa retorna resumo', async () => {
+  const secret = 'test-session-secret';
+  const cookie = createAdminSessionCookie({ sub: 'admin' }, { secret, expiresInMs: 60_000 });
+  const previousSecret = process.env.ADMIN_SESSION_SECRET;
+  process.env.ADMIN_SESSION_SECRET = secret;
+
+  try {
+    const handler = createReenviarIngressosEmMassaHandler({
+      reenviarEmMassa: async () => ({ total: 3, enviados: 3, falhas: 0, detalhes: [] })
+    });
+    const response = createMockResponse();
+
+    await handler({
+      method: 'POST',
+      body: { mensagemDestaque: 'Mostre seus ingressos na portaria.' },
+      headers: { cookie: `afc_admin_session=${cookie}` }
+    }, response);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body.total, 3);
+    assert.equal(response.body.enviados, 3);
   } finally {
     process.env.ADMIN_SESSION_SECRET = previousSecret;
   }

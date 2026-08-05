@@ -140,6 +140,26 @@
             <p id="resendResult" class="small" style="min-height:20px; margin:12px 0 0;"></p>
           </div>
           <div class="card" style="margin-bottom:20px;">
+            <h2 style="margin-top:0;">Lembrete em massa (Arquibancada / VIP)</h2>
+            <p class="small" style="margin:0 0 16px;">Reenvia os mesmos ingressos e QR Codes para todos os compradores pagos de ingresso físico, com uma mensagem de destaque no topo do e-mail.</p>
+            <form id="massResendForm" style="display:grid; gap:12px; max-width:640px;">
+              <label class="small" style="display:grid; gap:6px;">
+                Mensagem de destaque
+                <textarea id="massResendMessage" rows="3" required maxlength="500">Faltam apenas 10 dias para o Avalanche Fight Championship! Mostre seus ingressos na portaria na entrada do evento.</textarea>
+              </label>
+              <label class="small" style="display:grid; gap:6px;">
+                Tipo de ingresso
+                <select id="massResendType">
+                  <option value="">Arquibancada e VIP</option>
+                  <option value="arquibancada">Somente Arquibancada</option>
+                  <option value="vip">Somente Cadeira VIP</option>
+                </select>
+              </label>
+              <button class="btn btn-primary" type="submit" id="massResendBtn">Reenviar ingressos para todos</button>
+            </form>
+            <p id="massResendResult" class="small" style="min-height:20px; margin:12px 0 0;"></p>
+          </div>
+          <div class="card" style="margin-bottom:20px;">
             <h2 style="margin-top:0;">Pay-Per-View</h2>
             <p class="small" style="margin:0 0 16px;">Dispare o e-mail com o link da transmissão para compradores aprovados do Pay-Per-View.</p>
             <form id="ppvForm" style="display:grid; gap:12px; max-width:640px;">
@@ -256,6 +276,54 @@
             resultBox.textContent = error?.message || 'Falha ao reenviar ingressos.';
           } finally {
             if (document.getElementById('resendBtn')) {
+              sendButton.disabled = false;
+              sendButton.textContent = originalText;
+            }
+          }
+        });
+        document.getElementById('massResendForm').addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const sendButton = document.getElementById('massResendBtn');
+          const resultBox = document.getElementById('massResendResult');
+          const mensagemDestaque = document.getElementById('massResendMessage').value.trim();
+          const tipoIngresso = document.getElementById('massResendType').value.trim();
+          const originalText = sendButton.textContent;
+
+          if (!window.confirm('Confirma o reenvio dos ingressos para todos os compradores selecionados?')) {
+            return;
+          }
+
+          sendButton.disabled = true;
+          sendButton.textContent = 'Enviando...';
+          resultBox.style.color = 'var(--muted)';
+          resultBox.textContent = '';
+
+          try {
+            const response = await fetch('/api/admin/pedidos/reenviar-email-em-massa', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ mensagemDestaque, tipoIngresso: tipoIngresso || undefined })
+            });
+            const payload = await response.json().catch(() => ({}));
+
+            if (response.status === 401) {
+              state.authenticated = false;
+              renderLogin();
+              return;
+            }
+
+            if (!response.ok) {
+              throw new Error(payload.error || 'Falha ao reenviar ingressos em massa.');
+            }
+
+            resultBox.style.color = '#b7f5c6';
+            resultBox.textContent = `Total: ${payload.total ?? 0} • Enviados: ${payload.enviados ?? 0} • Falhas: ${payload.falhas ?? 0}`;
+            await renderDashboard();
+          } catch (error) {
+            resultBox.style.color = '#ff9b9b';
+            resultBox.textContent = error?.message || 'Falha ao reenviar ingressos em massa.';
+          } finally {
+            if (document.getElementById('massResendBtn')) {
               sendButton.disabled = false;
               sendButton.textContent = originalText;
             }

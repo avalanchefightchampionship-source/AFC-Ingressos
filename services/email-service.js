@@ -61,7 +61,7 @@ export const enviarEmailTeste = async (destinatario) => {
 };
 
 export const enviarIngressosPorEmail = async (payload, options = {}) => {
-  const { comprador, email, ingressos, dadosEvento } = payload || {};
+  const { comprador, email, ingressos, dadosEvento, mensagemDestaque, assunto } = payload || {};
   const { resendClient } = options;
 
   const apiKey = typeof resendClient === 'undefined' ? process.env.RESEND_API_KEY?.trim() : '';
@@ -100,14 +100,22 @@ export const enviarIngressosPorEmail = async (payload, options = {}) => {
     quantidadeIngressos: ingressosNorm.length,
     ingressos: ingressosNorm,
     qrCodes,
-    dominio: dadosEvento?.dominio || 'https://www.afcevents.com.br'
+    dominio: dadosEvento?.dominio || 'https://www.afcevents.com.br',
+    mensagemDestaque: typeof mensagemDestaque === 'string' ? mensagemDestaque.trim() : ''
   });
+
+  const eventoNome = dadosEvento?.nome || 'Avalanche Fight Championship';
+  const subject = typeof assunto === 'string' && assunto.trim()
+    ? assunto.trim()
+    : (mensagemDestaque?.trim()
+      ? `Lembrete — Seus ingressos — ${eventoNome}`
+      : `Seus ingressos — ${eventoNome}`);
 
   const resend = resendClient || new Resend(apiKey);
   const response = await resend.emails.send({
     from: 'AFC Ingressos <ingressos@afcevents.com.br>',
     to: [destinatario],
-    subject: 'Seus ingressos — Avalanche Fight Championship',
+    subject,
     html,
     attachments
   });

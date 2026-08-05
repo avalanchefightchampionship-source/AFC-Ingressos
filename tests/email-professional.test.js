@@ -81,6 +81,19 @@ test('renderiza HTML com dados do comprador e cartões dos ingressos', () => {
   assert.match(html, /Arquibancada/);
 });
 
+test('renderiza mensagem de destaque quando informada', () => {
+  const html = renderIngressosEmailHtml({
+    compradorNome: 'João da Silva',
+    eventoNome: 'Avalanche Fight Championship',
+    quantidadeIngressos: 1,
+    ingressos: [ingressosBase[0]],
+    qrCodes: ['qr-0'],
+    mensagemDestaque: 'Faltam apenas 10 dias para o AFC! Mostre seus ingressos na portaria.'
+  });
+
+  assert.match(html, /Faltam apenas 10 dias para o AFC! Mostre seus ingressos na portaria./);
+});
+
 test('envia e-mail profissional com mock do Resend sem anexar PDF e preserva QR Codes inline', async () => {
   const sent = [];
   const response = await enviarIngressosPorEmail({

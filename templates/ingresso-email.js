@@ -36,7 +36,8 @@ export const renderIngressosEmailHtml = ({
   quantidadeIngressos,
   ingressos,
   qrCodes = [],
-  dominio = 'https://www.afcevents.com.br'
+  dominio = 'https://www.afcevents.com.br',
+  mensagemDestaque = ''
 }) => {
   const cards = (Array.isArray(ingressos) ? ingressos : []).map((ingresso, index) => {
     const tipo = formatTicketType(ingresso.categoria || ingresso.tipo);
@@ -80,6 +81,17 @@ export const renderIngressosEmailHtml = ({
     `;
   }).join('');
 
+  const destaqueMarkup = mensagemDestaque
+    ? `
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:0 0 16px 0;border-collapse:separate;border-spacing:0;background:#fff7ed;border:1px solid #fdba74;border-radius:16px;">
+                  <tr>
+                    <td style="padding:16px 18px;font-size:15px;line-height:1.7;color:#9a3412;font-weight:700;">
+                      ${escapeHtml(mensagemDestaque)}
+                    </td>
+                  </tr>
+                </table>`
+    : '';
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -102,6 +114,7 @@ export const renderIngressosEmailHtml = ({
             <tr>
               <td style="padding:28px 32px 8px 32px;">
                 <p style="margin:0 0 12px 0;font-size:16px;line-height:1.7;color:#374151;">Olá, ${escapeHtml(compradorNome || 'comprador')}. Seu pedido foi confirmado e os ingressos já estão prontos para uso.</p>
+                ${destaqueMarkup}
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse:separate;border-spacing:0;background:#fafafa;border:1px solid #e5e7eb;border-radius:16px;">
                   <tr>
                     <td style="padding:18px 20px;">
