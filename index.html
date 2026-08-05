@@ -522,6 +522,7 @@
     .affiliate { display: none; margin-top: 2px; padding: 10px 12px; border-radius: 10px; background: rgba(225,6,0,.1); border: 1px solid rgba(225,6,0,.2); color: #ffb4b2; font-size: .85rem; }
     .validation-message { display: none; padding: 10px 12px; border-radius: 10px; background: rgba(255,122,122,.12); border: 1px solid rgba(255,122,122,.25); color: #ffd3d3; font-size: .9rem; }
     .note { text-align: center; color: #a6a6a6; font-size: .8rem; margin: 0; }
+    .field-hint { margin: 0; font-size: .78rem; font-weight: 400; color: #a6a6a6; line-height: 1.45; }
     .success { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(92,214,130,.3); background: rgba(92,214,130,.12); color: #d8ffd9; line-height: 1.6; }
 
     @media (max-width: 940px) {
@@ -817,7 +818,10 @@
       </label>
       <label>Nome completo<input id="fullName" required minlength="3" placeholder="Digite seu nome completo" /></label>
       <label>WhatsApp<input id="phone" required inputmode="tel" maxlength="15" placeholder="(44) 99999-9999" oninput="maskPhone(this)" /></label>
-      <label>E-mail<input id="email" type="email" required autocomplete="email" placeholder="Digite seu e-mail" /></label>
+      <label>E-mail
+        <input id="email" type="email" required autocomplete="email" placeholder="Digite seu e-mail" />
+        <span class="field-hint">Confira se o e-mail está correto — é nele que enviaremos seus ingressos.</span>
+      </label>
       <label>CPF<input id="cpf" required inputmode="numeric" maxlength="14" placeholder="000.000.000-00" oninput="maskCpf(this)" /></label>
       <label>CEP<input id="postalCode" required inputmode="numeric" maxlength="9" placeholder="00000-000" oninput="maskPostalCode(this)" /></label>
       <label>Número do endereço<input id="addressNumber" required maxlength="20" placeholder="Digite o número" /></label>
@@ -1041,6 +1045,7 @@
         });
       }
 
+      localStorage.setItem('afc_checkout_email', email);
       window.location.href = data.checkoutUrl;
     } catch (error) {
       validationMessage.textContent = error.message || 'Não foi possível criar o pagamento. Tente novamente.';
@@ -1057,9 +1062,15 @@
     openCheckout('arquibancada');
     const message = document.getElementById('success');
     message.style.display = 'block';
-    message.textContent = checkoutStatus === 'sucesso'
-      ? 'O pagamento foi iniciado ou concluído no Asaas. A confirmação definitiva ocorrerá após o processamento do pagamento.'
-      : 'Este checkout expirou. Revise os dados e clique em “Ir para o pagamento” para tentar novamente.';
+    if (checkoutStatus === 'sucesso') {
+      const savedEmail = localStorage.getItem('afc_checkout_email');
+      message.textContent = savedEmail
+        ? `Pagamento concluído! Seus ingressos serão enviados para ${savedEmail}. Remetente: ingressos@afcevents.com.br. Se não encontrar na caixa de entrada, verifique spam, promoções e lixo eletrônico.`
+        : 'Pagamento concluído! Seus ingressos serão enviados para o e-mail informado na compra (remetente: ingressos@afcevents.com.br). Se não encontrar na caixa de entrada, verifique spam, promoções e lixo eletrônico.';
+      localStorage.removeItem('afc_checkout_email');
+    } else {
+      message.textContent = 'Este checkout expirou. Revise os dados e clique em “Ir para o pagamento” para tentar novamente.';
+    }
     message.scrollIntoView({ block: 'nearest' });
   }
 

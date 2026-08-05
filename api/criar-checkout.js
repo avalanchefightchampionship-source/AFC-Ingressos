@@ -3,7 +3,7 @@ import {
   createPendingOrder,
   flagCheckoutFailure
 } from '../services/pedidos-service.js';
-import { buildAsaasCheckoutPayload } from '../services/asaas-checkout-payload.js';
+import { buildAsaasCheckoutPayload, buildAsaasCustomerPayload } from '../services/asaas-checkout-payload.js';
 
 const TICKETS = {
   arquibancada: { name: 'Ingresso Arquibancada', value: 50 },
@@ -165,15 +165,14 @@ export default async function handler(request, response) {
     access_token: process.env.ASAAS_API_KEY
   };
 
-  const customerPayload = {
+  const customerPayload = buildAsaasCustomerPayload({
     name: cleanName,
     email: cleanEmail,
     mobilePhone: cleanPhone,
     cpfCnpj: cleanCpfCnpj,
     postalCode: cleanPostalCode,
-    addressNumber: cleanAddressNumber,
-    province: 'PR'
-  };
+    addressNumber: cleanAddressNumber
+  });
 
   let customerId;
   try {

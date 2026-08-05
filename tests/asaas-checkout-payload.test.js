@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   MAX_CREDIT_CARD_INSTALLMENTS,
   buildAsaasCheckoutPayload,
+  buildAsaasCustomerPayload,
   supportsCreditCardInstallments
 } from '../services/asaas-checkout-payload.js';
 
@@ -55,4 +56,19 @@ test('payload de pay-per-view não inclui parcelamento', () => {
 
   assert.deepEqual(payload.chargeTypes, ['DETACHED']);
   assert.equal(payload.installment, undefined);
+});
+
+test('payload de cliente desabilita notificações automáticas do Asaas', () => {
+  const payload = buildAsaasCustomerPayload({
+    name: 'Cliente Teste',
+    email: 'cliente@example.com',
+    mobilePhone: '44999999999',
+    cpfCnpj: '39053344705',
+    postalCode: '87300000',
+    addressNumber: '123'
+  });
+
+  assert.equal(payload.notificationDisabled, true);
+  assert.equal(payload.province, 'PR');
+  assert.equal(payload.email, 'cliente@example.com');
 });

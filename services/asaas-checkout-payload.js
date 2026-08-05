@@ -5,6 +5,25 @@ const INSTALLMENT_TICKET_TYPES = new Set(['arquibancada', 'vip']);
 export const supportsCreditCardInstallments = (tipoIngresso) =>
   INSTALLMENT_TICKET_TYPES.has(tipoIngresso);
 
+export const buildAsaasCustomerPayload = ({
+  name,
+  email,
+  mobilePhone,
+  cpfCnpj,
+  postalCode,
+  addressNumber,
+  province = 'PR'
+}) => ({
+  name,
+  email,
+  mobilePhone,
+  cpfCnpj,
+  postalCode,
+  addressNumber,
+  province,
+  notificationDisabled: true
+});
+
 export const buildAsaasCheckoutPayload = ({
   tipoIngresso,
   ticket,
