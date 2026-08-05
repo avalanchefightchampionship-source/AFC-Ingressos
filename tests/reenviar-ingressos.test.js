@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createAdminSessionCookie } from '../lib/admin-auth.js';
 import { createReenviarIngressosHandler } from '../api/admin/pedidos/reenviar-email.js';
-import { createReenviarIngressosEmMassaHandler } from '../api/admin/pedidos/reenviar-email-em-massa.js';
 import {
   buildMensagemLembretePadrao,
   reenviarIngressosEmMassa,
@@ -161,14 +160,14 @@ test('reenviarIngressosEmMassa envia lembrete para pedidos pagos de ingresso fí
   assert.equal(payloads[1].email, 'bruno@example.com');
 });
 
-test('endpoint admin reenviar-email-em-massa retorna resumo', async () => {
+test('endpoint admin reenviar-email retorna resumo do reenvio em massa', async () => {
   const secret = 'test-session-secret';
   const cookie = createAdminSessionCookie({ sub: 'admin' }, { secret, expiresInMs: 60_000 });
   const previousSecret = process.env.ADMIN_SESSION_SECRET;
   process.env.ADMIN_SESSION_SECRET = secret;
 
   try {
-    const handler = createReenviarIngressosEmMassaHandler({
+    const handler = createReenviarIngressosHandler({
       reenviarEmMassa: async () => ({ total: 3, enviados: 3, falhas: 0, detalhes: [] })
     });
     const response = createMockResponse();

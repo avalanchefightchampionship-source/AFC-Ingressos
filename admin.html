@@ -299,7 +299,7 @@
           resultBox.textContent = '';
 
           try {
-            const response = await fetch('/api/admin/pedidos/reenviar-email-em-massa', {
+            const response = await fetch('/api/admin/pedidos/reenviar-email', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ mensagemDestaque, tipoIngresso: tipoIngresso || undefined })
