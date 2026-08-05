@@ -161,6 +161,26 @@ export const updatePedidoEmailStatus = async (pedidoId, emailData) => {
   return data;
 };
 
+export const findPedidoParaReenvioEmail = async ({ email, codigoPedido } = {}) => {
+  let query = getSupabaseAdmin()
+    .from(TABLE)
+    .select(PEDIDO_SELECT)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (codigoPedido) {
+    query = query.eq('codigo_pedido', codigoPedido);
+  } else if (email) {
+    query = query.eq('email', email);
+  } else {
+    return null;
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return data;
+};
+
 export const findPedidoParaReenvioIngressos = async ({ email, codigoPedido } = {}) => {
   let query = getSupabaseAdmin()
     .from(TABLE)

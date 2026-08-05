@@ -124,8 +124,8 @@
             <div class="metric"><div class="label">PPV transmissão pendente</div><div class="value">${state.dashboard?.ppvTransmissaoPendente ?? 0}</div></div>
           </div>
           <div class="card" style="margin-bottom:20px;">
-            <h2 style="margin-top:0;">Reenviar ingressos</h2>
-            <p class="small" style="margin:0 0 16px;">Use após corrigir o e-mail de um comprador no Supabase. Reenvia os ingressos já emitidos para o e-mail atual do pedido.</p>
+            <h2 style="margin-top:0;">Reenviar e-mail ao comprador</h2>
+            <p class="small" style="margin:0 0 16px;">Use após corrigir o e-mail de um comprador no Supabase. Reenvia ingressos (Arquibancada/VIP) ou a confirmação de Pay-Per-View para o e-mail atual do pedido.</p>
             <form id="resendForm" style="display:grid; gap:12px; max-width:640px;">
               <label class="small" style="display:grid; gap:6px;">
                 E-mail do comprador
@@ -135,7 +135,7 @@
                 Código do pedido (opcional)
                 <input type="text" id="resendCodigo" placeholder="AFC-DDB90F82" />
               </label>
-              <button class="btn btn-primary" type="submit" id="resendBtn">Reenviar ingressos</button>
+              <button class="btn btn-primary" type="submit" id="resendBtn">Reenviar e-mail</button>
             </form>
             <p id="resendResult" class="small" style="min-height:20px; margin:12px 0 0;"></p>
           </div>

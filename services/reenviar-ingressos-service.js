@@ -1,9 +1,9 @@
 import { enviarIngressosPorEmail } from './email-service.js';
-import { buildEventoDados } from './pay-per-view-service.js';
+import { buildEventoDados, enviarConfirmacaoPayPerView } from './pay-per-view-service.js';
 import { APPROVED_PAYMENT_STATUS_VALUES } from './payment-events.js';
 import { findIngressosByPedidoId } from '../repositories/ingressos-repository.js';
 import {
-  findPedidoParaReenvioIngressos,
+  findPedidoParaReenvioEmail,
   findPedidosIngressosFisicosPagos,
   updatePedidoEmailStatus
 } from '../repositories/pedidos-repository.js';
@@ -74,12 +74,43 @@ const enviarIngressosDoPedido = async (
   };
 };
 
+const reenviarConfirmacaoPayPerViewDoPedido = async (
+  pedido,
+  { enviarConfirmacao = enviarConfirmacaoPayPerView, atualizarStatus = updatePedidoEmailStatus } = {}
+) => {
+  const emailId = await enviarConfirmacao({
+    comprador: { nome: pedido.nome },
+    email: pedido.email,
+    pedido,
+    quantidade: pedido.quantidade,
+    dadosEvento: buildEventoDados()
+  });
+
+  await atualizarStatus(pedido.id, {
+    email_enviado: true,
+    email_enviado_em: new Date().toISOString(),
+    email_tentativas: (pedido.email_tentativas || 0) + 1,
+    email_ultimo_erro: null
+  });
+
+  return {
+    pedidoId: pedido.id,
+    codigoPedido: pedido.codigo_pedido,
+    nome: pedido.nome,
+    email: pedido.email,
+    tipoIngresso: 'pay-per-view',
+    quantidadeIngressos: 0,
+    emailId: typeof emailId === 'string' ? emailId : emailId?.id || null
+  };
+};
+
 export const reenviarIngressosPorEmail = async (
   { email, codigoPedido },
   {
-    buscarPedido = findPedidoParaReenvioIngressos,
+    buscarPedido = findPedidoParaReenvioEmail,
     listarIngressos = findIngressosByPedidoId,
     enviarEmail = enviarIngressosPorEmail,
+    enviarConfirmacao = enviarConfirmacaoPayPerView,
     atualizarStatus = updatePedidoEmailStatus
   } = {}
 ) => {
@@ -97,19 +128,23 @@ export const reenviarIngressosPorEmail = async (
   if (!pedido) {
     throw new Error('Pedido não encontrado.');
   }
-  if (pedido.tipo_ingresso === 'pay-per-view') {
-    throw new Error('Este pedido é Pay-Per-View. Use o envio de link da transmissão.');
-  }
   if (!APPROVED_PAYMENT_STATUS_VALUES.includes(pedido.status_pagamento)) {
-    throw new Error('Só é possível reenviar ingressos de pedidos pagos.');
-  }
-
-  const ingressos = await listarIngressos(pedido.id);
-  if (!ingressos?.length) {
-    throw new Error('Nenhum ingresso emitido para este pedido.');
+    throw new Error('Só é possível reenviar e-mails de pedidos pagos.');
   }
 
   try {
+    if (pedido.tipo_ingresso === 'pay-per-view') {
+      return await reenviarConfirmacaoPayPerViewDoPedido(pedido, {
+        enviarConfirmacao,
+        atualizarStatus
+      });
+    }
+
+    const ingressos = await listarIngressos(pedido.id);
+    if (!ingressos?.length) {
+      throw new Error('Nenhum ingresso emitido para este pedido.');
+    }
+
     const result = await enviarIngressosDoPedido(pedido, {
       mensagemDestaque: '',
       listarIngressos,

@@ -60,6 +60,38 @@ test('reenviarIngressosPorEmail envia ingressos existentes para o e-mail do pedi
   assert.equal(emailPayload.ingressos.length, 1);
 });
 
+test('reenviarIngressosPorEmail reenvia confirmação Pay-Per-View', async () => {
+  const pedido = {
+    id: 'pedido-ppv-1',
+    codigo_pedido: 'AFC-PPV001',
+    nome: 'Karla Aono',
+    email: 'karlaaono70@gmail.com',
+    tipo_ingresso: 'pay-per-view',
+    quantidade: 1,
+    status_pagamento: 'PAGAMENTO_CONFIRMADO',
+    email_tentativas: 1
+  };
+  let confirmacaoPayload = null;
+
+  const result = await reenviarIngressosPorEmail(
+    { email: pedido.email },
+    {
+      buscarPedido: async () => pedido,
+      enviarConfirmacao: async (payload) => {
+        confirmacaoPayload = payload;
+        return 'ppv-email-123';
+      },
+      atualizarStatus: async (pedidoId, data) => ({ ...pedido, ...data })
+    }
+  );
+
+  assert.equal(result.codigoPedido, 'AFC-PPV001');
+  assert.equal(result.tipoIngresso, 'pay-per-view');
+  assert.equal(result.emailId, 'ppv-email-123');
+  assert.equal(confirmacaoPayload.email, 'karlaaono70@gmail.com');
+  assert.equal(confirmacaoPayload.pedido.codigo_pedido, 'AFC-PPV001');
+});
+
 test('endpoint admin reenviar-email exige autenticação', async () => {
   const handler = createReenviarIngressosHandler({
     reenviar: async () => ({ codigoPedido: 'AFC-1' })
