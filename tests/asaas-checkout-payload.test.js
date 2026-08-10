@@ -28,7 +28,7 @@ test('payload de arquibancada permite parcelamento em até 3x no cartão', () =>
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'arquibancada',
-    ticket: { name: 'Ingresso Arquibancada', value: 50 }
+    ticket: { name: 'Ingresso Arquibancada', value: 60 }
   });
 
   assert.deepEqual(payload.billingTypes, ['PIX', 'CREDIT_CARD']);
@@ -40,7 +40,7 @@ test('payload de vip permite parcelamento em até 3x no cartão', () => {
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'vip',
-    ticket: { name: 'Ingresso Cadeira VIP', value: 100 }
+    ticket: { name: 'Ingresso Cadeira VIP', value: 150 }
   });
 
   assert.deepEqual(payload.chargeTypes, ['DETACHED', 'INSTALLMENT']);

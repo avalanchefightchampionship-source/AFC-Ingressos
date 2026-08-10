@@ -603,7 +603,7 @@
       content_category: 'Ingresso para evento',
       content_ids: ['afc-2026-arquibancada'],
       content_type: 'product',
-      value: 50.00,
+      value: 60.00,
       currency: 'BRL'
     });
   </script>
@@ -737,7 +737,7 @@
         <article class="ticket">
           <small>Entrada padrão</small>
           <h3>Arquibancada</h3>
-          <div class="price"><sup>R$</sup>50<span>,00</span></div>
+          <div class="price"><sup>R$</sup>60<span>,00</span></div>
           <p class="price-caption">Por pessoa</p>
           <ul>
             <li>Acesso ao evento</li>
@@ -751,7 +751,7 @@
           <span class="limited">Mais exclusivo</span>
           <small>Experiência privilegiada</small>
           <h3>Cadeira VIP</h3>
-          <div class="price"><sup>R$</sup>100<span>,00</span></div>
+          <div class="price"><sup>R$</sup>150<span>,00</span></div>
           <p class="price-caption">Por pessoa</p>
           <ul>
             <li>Acesso ao evento</li>
@@ -810,8 +810,8 @@
       <label>
         Tipo de ingresso
         <div class="ticket-options" role="group" aria-label="Tipo de ingresso">
-          <button type="button" class="ticket-option active" id="ticketOptionArquibancada" onclick="selectTicketType('arquibancada', this)"><strong>Arquibancada</strong><span>R$ 50,00</span></button>
-          <button type="button" class="ticket-option" id="ticketOptionVip" onclick="selectTicketType('vip', this)"><strong>Cadeira VIP</strong><span>R$ 100,00</span></button>
+          <button type="button" class="ticket-option active" id="ticketOptionArquibancada" onclick="selectTicketType('arquibancada', this)"><strong>Arquibancada</strong><span>R$ 60,00</span></button>
+          <button type="button" class="ticket-option" id="ticketOptionVip" onclick="selectTicketType('vip', this)"><strong>Cadeira VIP</strong><span>R$ 150,00</span></button>
           <button type="button" class="ticket-option" id="ticketOptionPayPerView" onclick="selectTicketType('pay-per-view', this)"><strong>Pay-Per-View</strong><span>R$ 35,00</span></button>
         </div>
         <input type="hidden" id="ticketType" value="arquibancada" />
@@ -828,7 +828,7 @@
       <div class="quantity"><span>Quantidade</span><div class="counter"><button type="button" onclick="changeQty(-1)">−</button><strong id="qty">1</strong><button type="button" onclick="changeQty(1)">+</button></div></div>
       <div class="affiliate" id="affiliate"></div>
       <div class="validation-message" id="validationMessage"></div>
-      <div class="summary"><div><span>Ingresso</span><strong id="summaryType">Arquibancada</strong></div><div><span>Quantidade</span><strong id="summaryQty">1</strong></div><div class="total"><span>Total</span><strong id="summaryTotal">R$ 50,00</strong></div></div>
+      <div class="summary"><div><span>Ingresso</span><strong id="summaryType">Arquibancada</strong></div><div><span>Quantidade</span><strong id="summaryQty">1</strong></div><div class="total"><span>Total</span><strong id="summaryTotal">R$ 60,00</strong></div></div>
       <button class="btn btn-primary" id="submitButton" type="submit">Ir para o pagamento</button>
       <p class="note">Você será direcionado ao ambiente seguro do Asaas.</p>
       <div class="success" id="success"></div>
@@ -836,7 +836,7 @@
   </div>
 </div>
 <script>
-  const prices = { arquibancada: 50, vip: 100, 'pay-per-view': 35 };
+  const prices = { arquibancada: 60, vip: 150, 'pay-per-view': 35 };
   const names = { arquibancada: 'Arquibancada', vip: 'Cadeira VIP', 'pay-per-view': 'Pay-Per-View' };
   const pixelContentIds = { arquibancada: 'afc-2026-arquibancada', vip: 'afc-2026-vip', 'pay-per-view': 'afc-2026-pay-per-view' };
   let quantity = 1;

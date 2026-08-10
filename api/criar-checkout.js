@@ -6,8 +6,8 @@ import {
 import { buildAsaasCheckoutPayload, buildAsaasCustomerPayload } from '../services/asaas-checkout-payload.js';
 
 const TICKETS = {
-  arquibancada: { name: 'Ingresso Arquibancada', value: 50 },
-  vip: { name: 'Ingresso Cadeira VIP', value: 100 },
+  arquibancada: { name: 'Ingresso Arquibancada', value: 60 },
+  vip: { name: 'Ingresso Cadeira VIP', value: 150 },
   'pay-per-view': { name: 'Pay-Per-View', value: 35 }
 };
 

@@ -7,8 +7,8 @@ const PURCHASE_CONTENT_IDS = {
   'pay-per-view': 'afc-2026-pay-per-view'
 };
 const PURCHASE_PRICE_BY_TYPE = {
-  arquibancada: 50,
-  vip: 100,
+  arquibancada: 60,
+  vip: 150,
   'pay-per-view': 35
 };
 
