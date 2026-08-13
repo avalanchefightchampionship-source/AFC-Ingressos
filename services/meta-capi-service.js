@@ -9,7 +9,7 @@ const PURCHASE_CONTENT_IDS = {
 const PURCHASE_PRICE_BY_TYPE = {
   arquibancada: 60,
   vip: 150,
-  'pay-per-view': 35
+  'pay-per-view': 45
 };
 
 const normalizeText = (value) => {

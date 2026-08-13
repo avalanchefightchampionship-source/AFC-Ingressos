@@ -770,7 +770,7 @@
         <article class="ticket ppv">
           <small>Transmissão online</small>
           <h3>Pay-Per-View</h3>
-          <div class="price"><sup>R$</sup>35<span>,00</span></div>
+          <div class="price"><sup>R$</sup>45<span>,00</span></div>
           <p class="price-caption">Por acesso</p>
           <ul>
             <li>Transmissão ao vivo pela internet</li>
@@ -818,7 +818,7 @@
         <div class="ticket-options" role="group" aria-label="Tipo de ingresso">
           <button type="button" class="ticket-option active" id="ticketOptionArquibancada" onclick="selectTicketType('arquibancada', this)"><strong>Arquibancada</strong><span>R$ 60,00</span></button>
           <button type="button" class="ticket-option" id="ticketOptionVip" onclick="selectTicketType('vip', this)"><strong>Cadeira VIP</strong><span>R$ 150,00</span></button>
-          <button type="button" class="ticket-option" id="ticketOptionPayPerView" onclick="selectTicketType('pay-per-view', this)"><strong>Pay-Per-View</strong><span>R$ 35,00</span></button>
+          <button type="button" class="ticket-option" id="ticketOptionPayPerView" onclick="selectTicketType('pay-per-view', this)"><strong>Pay-Per-View</strong><span>R$ 45,00</span></button>
         </div>
         <input type="hidden" id="ticketType" value="arquibancada" />
       </label>
@@ -855,7 +855,7 @@
   </div>
 </div>
 <script>
-  const prices = { arquibancada: 60, vip: 150, 'pay-per-view': 35 };
+  const prices = { arquibancada: 60, vip: 150, 'pay-per-view': 45 };
   const names = { arquibancada: 'Arquibancada', vip: 'Cadeira VIP', 'pay-per-view': 'Pay-Per-View' };
   const pixelContentIds = { arquibancada: 'afc-2026-arquibancada', vip: 'afc-2026-vip', 'pay-per-view': 'afc-2026-pay-per-view' };
   let quantity = 1;

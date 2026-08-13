@@ -1,7 +1,7 @@
 export const TICKET_PRICES = {
   arquibancada: { name: 'Ingresso Arquibancada', value: 60 },
   vip: { name: 'Ingresso Cadeira VIP', value: 150 },
-  'pay-per-view': { name: 'Pay-Per-View', value: 35 }
+  'pay-per-view': { name: 'Pay-Per-View', value: 45 }
 };
 
 export const MIN_CHECKOUT_TOTAL = 1;

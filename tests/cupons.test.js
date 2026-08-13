@@ -68,8 +68,8 @@ test('calculatePricingWithCupom limita desconto ao total mínimo do checkout', a
     }
   );
 
-  assert.equal(pricing.subtotal, 35);
-  assert.equal(pricing.desconto, 34);
+  assert.equal(pricing.subtotal, 45);
+  assert.equal(pricing.desconto, 44);
   assert.equal(pricing.total, 1);
 });
 

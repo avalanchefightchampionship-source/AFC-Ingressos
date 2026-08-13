@@ -51,7 +51,7 @@ test('payload de pay-per-view não inclui parcelamento', () => {
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'pay-per-view',
-    ticket: { name: 'Pay-Per-View', value: 35 }
+    ticket: { name: 'Pay-Per-View', value: 45 }
   });
 
   assert.deepEqual(payload.chargeTypes, ['DETACHED']);

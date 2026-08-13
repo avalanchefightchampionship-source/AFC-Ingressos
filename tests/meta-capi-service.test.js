@@ -206,7 +206,7 @@ test('buildPurchaseEvent inclui pay-per-view com preço correto', async () => {
         telefone: '44999998888',
         tipo_ingresso: 'pay-per-view',
         quantidade: 2,
-        valor_total: 70
+        valor_total: 90
       },
       eventId: 'evt-ppv',
       paymentId: 'pay-ppv',
@@ -214,7 +214,7 @@ test('buildPurchaseEvent inclui pay-per-view com preço correto', async () => {
     });
 
     assert.deepEqual(event.custom_data.content_ids, ['afc-2026-pay-per-view']);
-    assert.equal(event.custom_data.value, 70);
+    assert.equal(event.custom_data.value, 90);
     assert.equal(event.custom_data.num_items, 2);
   });
 });
@@ -224,7 +224,7 @@ test('resolveValue calcula pay-per-view quando valor_total ausente', () => {
     { tipo_ingresso: 'pay-per-view', quantidade: 3 },
     3
   );
-  assert.equal(value, 105);
+  assert.equal(value, 135);
 });
 
 test('falha da Meta retorna sent=false e não lança erro', async () => {
