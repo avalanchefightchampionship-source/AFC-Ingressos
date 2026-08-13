@@ -1,8 +1,8 @@
 import { getAdminCookieValue, verifyAdminSessionCookie } from '../../lib/admin-auth.js';
 import { getSupabaseAdmin } from '../../lib/supabase-admin.js';
 import { APPROVED_PAYMENT_STATUS_VALUES } from '../../services/payment-events.js';
-import { criarCupomDesconto } from '../../services/cupons-service.js';
-import { listCupons } from '../../repositories/cupons-repository.js';
+import { criarCupomDesconto, isCupomInfrastructureError } from '../../services/cupons-service.js';
+import { listCuponsWithStatus } from '../../repositories/cupons-repository.js';
 
 const sendJson = (response, status, body) => {
   response.status(status).json(body);
@@ -93,7 +93,10 @@ export const getDashboardData = async (supabase) => {
 
   if (ppvTransmissaoError) throw ppvTransmissaoError;
 
-  const cupons = await listCupons({ limit: 50, client: supabase });
+  const { cupons, setupPending: cuponsSetupPending } = await listCuponsWithStatus({
+    limit: 50,
+    client: supabase
+  });
 
   return {
     dashboard: {
@@ -115,7 +118,8 @@ export const getDashboardData = async (supabase) => {
     cupons: (cupons || []).map((cupom) => ({
       ...cupom,
       status: cupom.usado ? 'usado' : 'disponivel'
-    }))
+    })),
+    cuponsSetupPending
   };
 };
 
@@ -144,6 +148,11 @@ export default async function handler(request, response) {
       });
     } catch (error) {
       console.error(error);
+      if (isCupomInfrastructureError(error)) {
+        return sendJson(response, 503, {
+          error: 'Cupons ainda não configurados no Supabase. Execute a migration de cupons.'
+        });
+      }
       return sendJson(response, 400, {
         error: error?.message || 'Não foi possível criar o cupom.'
       });

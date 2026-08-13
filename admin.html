@@ -91,15 +91,33 @@
       const renderDashboard = async () => {
         app.innerHTML = '<div class="card"><p>Carregando painel...</p></div>';
         const response = await fetch('/api/admin/dashboard');
-        if (!response.ok) {
+        if (response.status === 401) {
           state.authenticated = false;
           renderLogin();
+          return;
+        }
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          app.innerHTML = `
+            <div class="card">
+              <h1 style="margin-top:0;">Painel AFC Events</h1>
+              <p style="color:#ff9b9b;">${payload.error || 'Não foi possível carregar o painel. Tente novamente.'}</p>
+              <button class="btn btn-primary" type="button" id="retryDashboardBtn">Tentar novamente</button>
+              <button class="btn" type="button" id="logoutAfterErrorBtn" style="background:#202020; color:#fff; margin-left:10px;">Sair</button>
+            </div>`;
+          document.getElementById('retryDashboardBtn').addEventListener('click', renderDashboard);
+          document.getElementById('logoutAfterErrorBtn').addEventListener('click', async () => {
+            await fetch('/api/admin/logout', { method: 'POST' });
+            state.authenticated = false;
+            renderLogin();
+          });
           return;
         }
         const payload = await response.json();
         state.dashboard = payload.dashboard || null;
         state.pedidos = payload.pedidos || [];
         state.cupons = payload.cupons || [];
+        state.cuponsSetupPending = Boolean(payload.cuponsSetupPending);
         app.innerHTML = `
           <div class="topbar">
             <div>
@@ -127,6 +145,7 @@
           <div class="card" style="margin-bottom:20px;">
             <h2 style="margin-top:0;">Cupons de desconto</h2>
             <p class="small" style="margin:0 0 16px;">Gere cupons de uso único com desconto em reais. Envie o código para o comprador aplicar no checkout.</p>
+            ${state.cuponsSetupPending ? '<p class="small" style="color:#ffd59b; margin:0 0 16px;">Cupons ainda não estão ativos no banco. Execute a migration <strong>20260810000100_add_cupons_support.sql</strong> no Supabase.</p>' : ''}
             <form id="couponForm" style="display:grid; gap:12px; max-width:640px;">
               <label class="small" style="display:grid; gap:6px;">
                 Valor do desconto (R$)

@@ -13,6 +13,19 @@ import {
 
 export { normalizeCupomCodigo };
 
+export const CUPOM_INDISPONIVEL_MESSAGE = 'Cupom de desconto não disponível';
+
+export const isCupomInfrastructureError = (error) => {
+  const message = String(error?.message || error || '');
+  const code = String(error?.code || '');
+  return code === 'PGRST205'
+    || /public\.cupons/i.test(message)
+    || /schema cache/i.test(message)
+    || /relation.*cupons.*does not exist/i.test(message);
+};
+
+export const toCupomPublicError = () => new Error(CUPOM_INDISPONIVEL_MESSAGE);
+
 export const validateValorDesconto = (valorDesconto) => {
   const value = Number(valorDesconto);
   if (!Number.isFinite(value) || value <= 0) {
@@ -52,30 +65,37 @@ export const calculatePricingWithCupom = async (
     };
   }
 
-  validateCupomCodigoInput(cleanCodigo);
-  const cupom = await buscarCupom(cleanCodigo);
-  if (!cupom) {
-    throw new Error('Cupom inválido ou já utilizado.');
-  }
-  if (cupom.usado) {
-    throw new Error('Cupom inválido ou já utilizado.');
-  }
+  try {
+    validateCupomCodigoInput(cleanCodigo);
+    const cupom = await buscarCupom(cleanCodigo);
+    if (!cupom || cupom.usado) {
+      throw toCupomPublicError();
+    }
 
-  const maxDesconto = roundMoney(subtotal - MIN_CHECKOUT_TOTAL);
-  if (maxDesconto <= 0) {
-    throw new Error('Este pedido não permite desconto.');
+    const maxDesconto = roundMoney(subtotal - MIN_CHECKOUT_TOTAL);
+    if (maxDesconto <= 0) {
+      throw toCupomPublicError();
+    }
+
+    const desconto = roundMoney(Math.min(Number(cupom.valor_desconto), maxDesconto));
+    const total = roundMoney(subtotal - desconto);
+
+    return {
+      subtotal,
+      desconto,
+      total,
+      cupomCodigo: cupom.codigo,
+      valorDescontoCupom: Number(cupom.valor_desconto)
+    };
+  } catch (error) {
+    if (error?.message === CUPOM_INDISPONIVEL_MESSAGE) {
+      throw error;
+    }
+    if (isCupomInfrastructureError(error)) {
+      throw toCupomPublicError();
+    }
+    throw toCupomPublicError();
   }
-
-  const desconto = roundMoney(Math.min(Number(cupom.valor_desconto), maxDesconto));
-  const total = roundMoney(subtotal - desconto);
-
-  return {
-    subtotal,
-    desconto,
-    total,
-    cupomCodigo: cupom.codigo,
-    valorDescontoCupom: Number(cupom.valor_desconto)
-  };
 };
 
 export const criarCupomDesconto = async (

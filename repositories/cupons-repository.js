@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getSupabaseAdmin } from '../lib/supabase-admin.js';
+import { isCupomInfrastructureError } from '../services/cupons-service.js';
 
 const TABLE = 'cupons';
 const CUPOM_SELECT = 'id, codigo, valor_desconto, usado, usado_em, pedido_id, created_at';
@@ -24,6 +25,11 @@ export const findCupomByCodigo = async (codigo) => {
 };
 
 export const listCupons = async ({ limit = 50, client } = {}) => {
+  const result = await listCuponsWithStatus({ limit, client });
+  return result.cupons;
+};
+
+export const listCuponsWithStatus = async ({ limit = 50, client } = {}) => {
   const supabase = client || getSupabaseAdmin();
   const safeLimit = Math.min(Math.max(limit, 1), 100);
   const { data, error } = await supabase
@@ -32,8 +38,13 @@ export const listCupons = async ({ limit = 50, client } = {}) => {
     .order('created_at', { ascending: false })
     .limit(safeLimit);
 
-  if (error) throw error;
-  return data || [];
+  if (error) {
+    if (isCupomInfrastructureError(error)) {
+      return { cupons: [], setupPending: true };
+    }
+    throw error;
+  }
+  return { cupons: data || [], setupPending: false };
 };
 
 export const createCupom = async ({ codigo, valorDesconto }) => {

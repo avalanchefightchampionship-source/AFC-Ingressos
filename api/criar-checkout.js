@@ -6,7 +6,8 @@ import {
 import { buildAsaasCheckoutPayload, buildAsaasCustomerPayload } from '../services/asaas-checkout-payload.js';
 import {
   calculatePricingWithCupom,
-  calculateUnitValueForCheckout
+  calculateUnitValueForCheckout,
+  CUPOM_INDISPONIVEL_MESSAGE
 } from '../services/cupons-service.js';
 import { getTicket } from '../services/ticket-pricing.js';
 
@@ -81,7 +82,7 @@ const handleValidarCupom = async (body, response) => {
     });
   } catch (error) {
     return sendJson(response, 400, {
-      error: error?.message || 'Cupom inválido ou já utilizado.'
+      error: error?.message || CUPOM_INDISPONIVEL_MESSAGE
     });
   }
 };
@@ -165,7 +166,7 @@ export default async function handler(request, response) {
     });
   } catch (error) {
     return sendJson(response, 400, {
-      error: error?.message || 'Cupom inválido ou já utilizado.'
+      error: error?.message || CUPOM_INDISPONIVEL_MESSAGE
     });
   }
 

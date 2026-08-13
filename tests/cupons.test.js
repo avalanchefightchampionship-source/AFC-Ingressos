@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  CUPOM_INDISPONIVEL_MESSAGE,
   calculatePricingWithCupom,
   calculateUnitValueForCheckout,
   criarCupomDesconto,
@@ -51,7 +52,7 @@ test('calculatePricingWithCupom rejeita cupom usado', async () => {
         })
       }
     ),
-    /Cupom inválido ou já utilizado/i
+    /Cupom de desconto não disponível/i
   );
 });
 
@@ -70,6 +71,20 @@ test('calculatePricingWithCupom limita desconto ao total mínimo do checkout', a
   assert.equal(pricing.subtotal, 35);
   assert.equal(pricing.desconto, 34);
   assert.equal(pricing.total, 1);
+});
+
+test('calculatePricingWithCupom traduz erro de infraestrutura do Supabase', async () => {
+  await assert.rejects(
+    () => calculatePricingWithCupom(
+      { tipoIngresso: 'arquibancada', quantidade: 1, codigoCupom: 'AFC-TESTE' },
+      {
+        buscarCupom: async () => {
+          throw new Error("Could not find the table 'public.cupons' in the schema cache");
+        }
+      }
+    ),
+    (error) => error.message === CUPOM_INDISPONIVEL_MESSAGE
+  );
 });
 
 test('calculateUnitValueForCheckout calcula valor unitário com desconto', () => {

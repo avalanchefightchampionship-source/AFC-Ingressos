@@ -981,7 +981,7 @@
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok || !data.valid) {
-        throw new Error(data.error || 'Cupom inválido ou já utilizado.');
+        throw new Error(data.error || 'Cupom de desconto não disponível');
       }
 
       appliedCoupon = {
@@ -994,7 +994,7 @@
       messageBox.textContent = `Cupom aplicado: desconto de ${money(data.desconto)}.`;
       updateSummary();
     } catch (error) {
-      messageBox.textContent = error.message || 'Cupom inválido ou já utilizado.';
+      messageBox.textContent = error.message || 'Cupom de desconto não disponível';
       messageBox.classList.add('error');
     } finally {
       applyButton.disabled = false;
