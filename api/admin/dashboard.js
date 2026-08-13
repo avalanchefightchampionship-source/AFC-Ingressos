@@ -1,6 +1,8 @@
 import { getAdminCookieValue, verifyAdminSessionCookie } from '../../lib/admin-auth.js';
 import { getSupabaseAdmin } from '../../lib/supabase-admin.js';
 import { APPROVED_PAYMENT_STATUS_VALUES } from '../../services/payment-events.js';
+import { criarCupomDesconto } from '../../services/cupons-service.js';
+import { listCupons } from '../../repositories/cupons-repository.js';
 
 const sendJson = (response, status, body) => {
   response.status(status).json(body);
@@ -91,6 +93,8 @@ export const getDashboardData = async (supabase) => {
 
   if (ppvTransmissaoError) throw ppvTransmissaoError;
 
+  const cupons = await listCupons({ limit: 50, client: supabase });
+
   return {
     dashboard: {
       totalPedidos: totalPedidos || 0,
@@ -107,20 +111,48 @@ export const getDashboardData = async (supabase) => {
     pedidos: (pedidos || []).map((pedido) => ({
       ...pedido,
       status_email: pedido.email_enviado ? 'enviado' : (pedido.email_ultimo_erro ? 'falha' : 'pendente')
+    })),
+    cupons: (cupons || []).map((cupom) => ({
+      ...cupom,
+      status: cupom.usado ? 'usado' : 'disponivel'
     }))
   };
 };
 
 export default async function handler(request, response) {
-  if (request.method !== 'GET') {
-    response.setHeader('Allow', 'GET');
-    return sendJson(response, 405, { error: 'Método não permitido.' });
-  }
-
   const cookieValue = getAdminCookieValue(request);
   const session = verifyAdminSessionCookie(cookieValue, { secret: process.env.ADMIN_SESSION_SECRET });
   if (!session) {
     return sendJson(response, 401, { error: 'Não autenticado.' });
+  }
+
+  if (request.method === 'POST') {
+    const { acao, valorDesconto, codigo } = request.body || {};
+    if (acao !== 'criar-cupom') {
+      response.setHeader('Allow', 'GET, POST');
+      return sendJson(response, 405, { error: 'Método não permitido.' });
+    }
+
+    try {
+      const cupom = await criarCupomDesconto({ valorDesconto, codigo });
+      return sendJson(response, 201, {
+        success: true,
+        cupom: {
+          ...cupom,
+          status: cupom.usado ? 'usado' : 'disponivel'
+        }
+      });
+    } catch (error) {
+      console.error(error);
+      return sendJson(response, 400, {
+        error: error?.message || 'Não foi possível criar o cupom.'
+      });
+    }
+  }
+
+  if (request.method !== 'GET') {
+    response.setHeader('Allow', 'GET, POST');
+    return sendJson(response, 405, { error: 'Método não permitido.' });
   }
 
   try {

@@ -57,6 +57,9 @@ const createSupabaseStub = () => {
         },
         limit(value) {
           calls.push({ table, method: 'limit', value });
+          if (table === 'cupons') {
+            return Promise.resolve({ data: [], error: null });
+          }
           return Promise.resolve({
             data: [
               { id: '1', valor_total: 100, status_pagamento: 'PAGO', email_enviado: true, email_tentativas: 1, email_ultimo_erro: null },

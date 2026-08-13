@@ -9,6 +9,7 @@ import { emitIngressos } from './ingressos-service.js';
 import { enviarIngressosPorEmail } from './email-service.js';
 import { enviarConfirmacaoPayPerView, buildEventoDados } from './pay-per-view-service.js';
 import { sendMetaPurchaseEvent } from './meta-capi-service.js';
+import { markCupomAsUsed } from './cupons-service.js';
 
 export const PAY_PER_VIEW_TICKET_TYPE = 'pay-per-view';
 
@@ -87,9 +88,25 @@ export const onPaymentApproved = async (
     sendEmail = enviarIngressosPorEmail,
     sendPayPerViewConfirmation = enviarConfirmacaoPayPerView,
     updateEmailStatus = updatePedidoEmailStatus,
-    trackPurchase = sendMetaPurchaseEvent
+    trackPurchase = sendMetaPurchaseEvent,
+    confirmarCupom = markCupomAsUsed
   } = {}
 ) => {
+  if (shouldTrackPurchase && pedido?.cupom_codigo) {
+    try {
+      await confirmarCupom({
+        codigo: pedido.cupom_codigo,
+        pedidoId: pedido.id
+      });
+    } catch (error) {
+      console.error('Falha ao marcar cupom como utilizado.', {
+        pedidoId: pedido?.id || null,
+        cupomCodigo: pedido?.cupom_codigo || null,
+        message: error?.message || 'Erro desconhecido'
+      });
+    }
+  }
+
   const payPerView = isPayPerViewPedido(pedido);
   const emission = payPerView
     ? { quantidade: pedido?.quantidade ?? null, ingressos: [] }

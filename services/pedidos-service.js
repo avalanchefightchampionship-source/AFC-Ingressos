@@ -13,6 +13,9 @@ export const createPendingOrder = async ({
   tipoIngresso,
   quantidade,
   valorTotal,
+  valorSubtotal,
+  valorDesconto,
+  cupomCodigo,
   refAfiliado
 }) => {
   const uniqueId = randomUUID();
@@ -28,6 +31,9 @@ export const createPendingOrder = async ({
     tipo_ingresso: tipoIngresso,
     quantidade,
     valor_total: valorTotal,
+    valor_subtotal: valorSubtotal ?? valorTotal,
+    valor_desconto: valorDesconto ?? 0,
+    cupom_codigo: cupomCodigo || null,
     status_pagamento: 'AGUARDANDO_PAGAMENTO',
     status_pedido: 'AGUARDANDO_PAGAMENTO',
     ref_afiliado: refAfiliado,

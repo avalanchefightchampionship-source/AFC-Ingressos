@@ -1,7 +1,7 @@
 import { getSupabaseAdmin } from '../lib/supabase-admin.js';
 
 const TABLE = 'pedidos';
-export const PEDIDO_SELECT = 'id, codigo_pedido, nome, email, telefone, tipo_ingresso, quantidade, valor_total, status_pagamento, status_pedido, asaas_payment_id, email_enviado, email_enviado_em, email_tentativas, email_ultimo_erro, transmissao_link, transmissao_enviada, transmissao_enviada_em, transmissao_tentativas, transmissao_ultimo_erro';
+export const PEDIDO_SELECT = 'id, codigo_pedido, nome, email, telefone, tipo_ingresso, quantidade, valor_total, valor_subtotal, valor_desconto, cupom_codigo, status_pagamento, status_pedido, asaas_payment_id, email_enviado, email_enviado_em, email_tentativas, email_ultimo_erro, transmissao_link, transmissao_enviada, transmissao_enviada_em, transmissao_tentativas, transmissao_ultimo_erro';
 export const PEDIDO_EXPORT_SELECT = 'id, created_at, codigo_pedido, nome, email, telefone, cpf, tipo_ingresso, quantidade, valor_total, status_pagamento, asaas_checkout_id, asaas_payment_id, ref_afiliado';
 
 export const createPedido = async (pedido) => {

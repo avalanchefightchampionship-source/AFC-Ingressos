@@ -4,12 +4,11 @@ import {
   flagCheckoutFailure
 } from '../services/pedidos-service.js';
 import { buildAsaasCheckoutPayload, buildAsaasCustomerPayload } from '../services/asaas-checkout-payload.js';
-
-const TICKETS = {
-  arquibancada: { name: 'Ingresso Arquibancada', value: 60 },
-  vip: { name: 'Ingresso Cadeira VIP', value: 150 },
-  'pay-per-view': { name: 'Pay-Per-View', value: 35 }
-};
+import {
+  calculatePricingWithCupom,
+  calculateUnitValueForCheckout
+} from '../services/cupons-service.js';
+import { getTicket } from '../services/ticket-pricing.js';
 
 const sendJson = (response, status, body) => {
   response.status(status).json(body);
@@ -48,10 +47,54 @@ const getSupabaseHost = () => {
   }
 };
 
+const handleValidarCupom = async (body, response) => {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return sendJson(response, 500, { error: 'Banco de dados nao configurado.' });
+  }
+
+  const { tipoIngresso, quantidade, codigoCupom } = body || {};
+  const ticket = getTicket(tipoIngresso);
+
+  if (!ticket) {
+    return sendJson(response, 400, { error: 'Tipo de ingresso inválido.' });
+  }
+  if (!Number.isInteger(quantidade) || quantidade < 1 || quantidade > 10) {
+    return sendJson(response, 400, { error: 'Quantidade inválida.' });
+  }
+  if (typeof codigoCupom !== 'string' || !codigoCupom.trim()) {
+    return sendJson(response, 400, { error: 'Informe o código do cupom.' });
+  }
+
+  try {
+    const pricing = await calculatePricingWithCupom({
+      tipoIngresso,
+      quantidade,
+      codigoCupom
+    });
+
+    return sendJson(response, 200, {
+      valid: true,
+      cupomCodigo: pricing.cupomCodigo,
+      subtotal: pricing.subtotal,
+      desconto: pricing.desconto,
+      total: pricing.total
+    });
+  } catch (error) {
+    return sendJson(response, 400, {
+      error: error?.message || 'Cupom inválido ou já utilizado.'
+    });
+  }
+};
+
 export default async function handler(request, response) {
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
     return sendJson(response, 405, { error: 'Método não permitido.' });
+  }
+
+  const body = request.body || {};
+  if (body.acao === 'validar-cupom') {
+    return handleValidarCupom(body, response);
   }
 
   if (!process.env.ASAAS_API_KEY) {
@@ -62,7 +105,7 @@ export default async function handler(request, response) {
     return sendJson(response, 500, { error: 'Banco de dados nao configurado.' });
   }
 
-  const { nome, telefone, email, cpfCnpj, cep, numeroEndereco, tipoIngresso, quantidade, referenciaAfiliado } = request.body || {};
+  const { nome, telefone, email, cpfCnpj, cep, numeroEndereco, tipoIngresso, quantidade, referenciaAfiliado, codigoCupom } = body;
   const cleanName = typeof nome === 'string' ? nome.trim().replace(/\s+/g, ' ') : '';
   const cleanPhone = typeof telefone === 'string' ? telefone.replace(/\D/g, '') : '';
   const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -73,7 +116,7 @@ export default async function handler(request, response) {
   typeof referenciaAfiliado === 'string' && referenciaAfiliado.trim()
     ? referenciaAfiliado.trim()
     : 'Venda direta';
-  const ticket = TICKETS[tipoIngresso];
+  const ticket = getTicket(tipoIngresso);
 
   if (cleanName.length < 3 || cleanName.length > 120) {
     return sendJson(response, 400, { error: 'Nome inválido.' });
@@ -112,13 +155,29 @@ export default async function handler(request, response) {
     return sendJson(response, 500, { error: 'Configuração de retorno do pagamento inválida.' });
   }
   const affiliateReference = cleanReference === 'Venda direta' ? null : cleanReference;
-  const valorTotal = ticket.value * quantidade;
+  let pricing;
+
+  try {
+    pricing = await calculatePricingWithCupom({
+      tipoIngresso,
+      quantidade,
+      codigoCupom: typeof codigoCupom === 'string' ? codigoCupom : ''
+    });
+  } catch (error) {
+    return sendJson(response, 400, {
+      error: error?.message || 'Cupom inválido ou já utilizado.'
+    });
+  }
+
+  const valorTotal = pricing.total;
+  const unitValue = calculateUnitValueForCheckout(valorTotal, quantidade);
   let pedido;
 
   console.info('Checkout flow started.', {
     tipoIngresso,
     quantidade,
     hasAffiliateReference: Boolean(affiliateReference),
+    hasCupom: Boolean(pricing.cupomCodigo),
     supabaseHost: getSupabaseHost()
   });
 
@@ -132,6 +191,9 @@ export default async function handler(request, response) {
       tipoIngresso,
       quantidade,
       valorTotal,
+      valorSubtotal: pricing.subtotal,
+      valorDesconto: pricing.desconto,
+      cupomCodigo: pricing.cupomCodigo,
       refAfiliado: affiliateReference
     });
     console.info('Pending order created in Supabase.', {
@@ -237,6 +299,7 @@ export default async function handler(request, response) {
     quantidade,
     externalReference: pedido.externalReference,
     customerId,
+    unitValue,
     callback: {
       cancelUrl: buildReturnUrl(),
       expiredUrl: buildReturnUrl('expirado'),

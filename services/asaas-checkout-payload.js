@@ -30,8 +30,10 @@ export const buildAsaasCheckoutPayload = ({
   quantidade,
   externalReference,
   customerId,
-  callback
+  callback,
+  unitValue
 }) => {
+  const itemValue = unitValue ?? ticket.value;
   const payload = {
     billingTypes: ['PIX', 'CREDIT_CARD'],
     chargeTypes: supportsCreditCardInstallments(tipoIngresso)
@@ -45,7 +47,7 @@ export const buildAsaasCheckoutPayload = ({
       name: ticket.name,
       description: 'Avalanche Fight Championship - 15 de agosto de 2026',
       quantity: quantidade,
-      value: ticket.value
+      value: itemValue
     }],
     customer: customerId
   };

@@ -519,6 +519,12 @@
     .summary strong { color: #fff; }
     .summary .total { border-top: 1px solid rgba(255,255,255,.1); padding-top: 11px; font-size: 1rem; }
     .summary .total strong { color: var(--red-strong); }
+    .summary .discount strong { color: #b7f5c6; }
+    .coupon-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+    .coupon-row button { min-height: 50px; padding: 0 16px; border: 0; border-radius: 12px; background: rgba(255,255,255,.12); color: #fff; font-weight: 700; cursor: pointer; }
+    .coupon-row button:disabled { opacity: .6; cursor: not-allowed; }
+    .coupon-message { min-height: 18px; font-size: .88rem; color: #b7f5c6; }
+    .coupon-message.error { color: #ff9b9b; }
     .affiliate { display: none; margin-top: 2px; padding: 10px 12px; border-radius: 10px; background: rgba(225,6,0,.1); border: 1px solid rgba(225,6,0,.2); color: #ffb4b2; font-size: .85rem; }
     .validation-message { display: none; padding: 10px 12px; border-radius: 10px; background: rgba(255,122,122,.12); border: 1px solid rgba(255,122,122,.25); color: #ffd3d3; font-size: .9rem; }
     .note { text-align: center; color: #a6a6a6; font-size: .8rem; margin: 0; }
@@ -826,9 +832,22 @@
       <label>CEP<input id="postalCode" required inputmode="numeric" maxlength="9" placeholder="00000-000" oninput="maskPostalCode(this)" /></label>
       <label>Número do endereço<input id="addressNumber" required maxlength="20" placeholder="Digite o número" /></label>
       <div class="quantity"><span>Quantidade</span><div class="counter"><button type="button" onclick="changeQty(-1)">−</button><strong id="qty">1</strong><button type="button" onclick="changeQty(1)">+</button></div></div>
+      <label class="small" style="display:grid; gap:6px;">
+        Cupom de desconto (opcional)
+        <div class="coupon-row">
+          <input type="text" id="couponCode" placeholder="Ex.: AFC-KARLA20" autocomplete="off" />
+          <button type="button" id="applyCouponBtn" onclick="applyCoupon()">Aplicar</button>
+        </div>
+      </label>
+      <p id="couponMessage" class="coupon-message"></p>
       <div class="affiliate" id="affiliate"></div>
       <div class="validation-message" id="validationMessage"></div>
-      <div class="summary"><div><span>Ingresso</span><strong id="summaryType">Arquibancada</strong></div><div><span>Quantidade</span><strong id="summaryQty">1</strong></div><div class="total"><span>Total</span><strong id="summaryTotal">R$ 60,00</strong></div></div>
+      <div class="summary">
+        <div><span>Ingresso</span><strong id="summaryType">Arquibancada</strong></div>
+        <div><span>Quantidade</span><strong id="summaryQty">1</strong></div>
+        <div id="summaryDiscountRow" class="discount" style="display:none;"><span>Desconto</span><strong id="summaryDiscount">- R$ 0,00</strong></div>
+        <div class="total"><span>Total</span><strong id="summaryTotal">R$ 60,00</strong></div>
+      </div>
       <button class="btn btn-primary" id="submitButton" type="submit">Ir para o pagamento</button>
       <p class="note">Você será direcionado ao ambiente seguro do Asaas.</p>
       <div class="success" id="success"></div>
@@ -840,12 +859,20 @@
   const names = { arquibancada: 'Arquibancada', vip: 'Cadeira VIP', 'pay-per-view': 'Pay-Per-View' };
   const pixelContentIds = { arquibancada: 'afc-2026-arquibancada', vip: 'afc-2026-vip', 'pay-per-view': 'afc-2026-pay-per-view' };
   let quantity = 1;
+  let appliedCoupon = null;
   const params = new URLSearchParams(location.search);
   const incomingRef = params.get('ref');
   if (incomingRef) localStorage.setItem('afc_ref', incomingRef);
 
   function money(v) {
     return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function resetCouponState() {
+    appliedCoupon = null;
+    document.getElementById('couponCode').value = '';
+    document.getElementById('couponMessage').textContent = '';
+    document.getElementById('couponMessage').classList.remove('error');
   }
 
   function selectTicketType(type, button) {
@@ -855,6 +882,7 @@
     ticketInput.value = type;
     options.forEach((option) => option.classList.remove('active'));
     if (button) button.classList.add('active');
+    resetCouponState();
     updateSummary();
   }
 
@@ -882,6 +910,7 @@
     document.getElementById('success').style.display = 'none';
     document.getElementById('success').innerHTML = '';
     document.getElementById('validationMessage').style.display = 'none';
+    resetCouponState();
     document.querySelectorAll('.form input, .form select').forEach((field) => field.classList.remove('invalid'));
     updateSummary();
   }
@@ -897,14 +926,80 @@
   function changeQty(delta) {
     quantity = Math.max(1, Math.min(10, quantity + delta));
     document.getElementById('qty').textContent = quantity;
+    resetCouponState();
     updateSummary();
   }
 
   function updateSummary() {
     const type = document.getElementById('ticketType').value;
+    const subtotal = prices[type] * quantity;
     document.getElementById('summaryType').textContent = names[type];
     document.getElementById('summaryQty').textContent = quantity;
-    document.getElementById('summaryTotal').textContent = money(prices[type] * quantity);
+
+    if (appliedCoupon) {
+      document.getElementById('summaryDiscountRow').style.display = 'flex';
+      document.getElementById('summaryDiscount').textContent = `- ${money(appliedCoupon.desconto)}`;
+      document.getElementById('summaryTotal').textContent = money(appliedCoupon.total);
+      return;
+    }
+
+    document.getElementById('summaryDiscountRow').style.display = 'none';
+    document.getElementById('summaryTotal').textContent = money(subtotal);
+  }
+
+  async function applyCoupon() {
+    const type = document.getElementById('ticketType').value;
+    const codigoCupom = document.getElementById('couponCode').value.trim();
+    const messageBox = document.getElementById('couponMessage');
+    const applyButton = document.getElementById('applyCouponBtn');
+
+    messageBox.textContent = '';
+    messageBox.classList.remove('error');
+    appliedCoupon = null;
+    updateSummary();
+
+    if (!codigoCupom) {
+      messageBox.textContent = 'Informe o código do cupom.';
+      messageBox.classList.add('error');
+      return;
+    }
+
+    applyButton.disabled = true;
+    applyButton.textContent = 'Validando...';
+
+    try {
+      const response = await fetch('/api/criar-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          acao: 'validar-cupom',
+          tipoIngresso: type,
+          quantidade: quantity,
+          codigoCupom
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.valid) {
+        throw new Error(data.error || 'Cupom inválido ou já utilizado.');
+      }
+
+      appliedCoupon = {
+        codigo: data.cupomCodigo,
+        desconto: data.desconto,
+        total: data.total,
+        subtotal: data.subtotal
+      };
+      document.getElementById('couponCode').value = data.cupomCodigo;
+      messageBox.textContent = `Cupom aplicado: desconto de ${money(data.desconto)}.`;
+      updateSummary();
+    } catch (error) {
+      messageBox.textContent = error.message || 'Cupom inválido ou já utilizado.';
+      messageBox.classList.add('error');
+    } finally {
+      applyButton.disabled = false;
+      applyButton.textContent = 'Aplicar';
+    }
   }
 
   selectTicketType('arquibancada', document.getElementById('ticketOptionArquibancada'));
@@ -1024,7 +1119,8 @@
           numeroEndereco: addressNumber,
           tipoIngresso: type,
           quantidade: quantity,
-          referenciaAfiliado: ref
+          referenciaAfiliado: ref,
+          codigoCupom: appliedCoupon?.codigo || undefined
         })
       });
       const data = await response.json().catch(() => ({}));
@@ -1033,13 +1129,15 @@
         throw new Error(data.error || 'Não foi possível criar o pagamento. Tente novamente.');
       }
 
+      const checkoutValue = appliedCoupon?.total ?? (prices[type] * quantity);
+
       if (typeof fbq === 'function') {
         fbq('track', 'InitiateCheckout', {
           content_name: 'Avalanche Fight Championship 2026',
           content_category: 'Ingresso para evento',
           content_ids: [pixelContentIds[type] || type],
           content_type: 'product',
-          value: prices[type] * quantity,
+          value: checkoutValue,
           currency: 'BRL',
           num_items: quantity
         });

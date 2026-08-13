@@ -36,7 +36,7 @@
     <div class="shell" id="app"></div>
     <script type="module">
       const app = document.getElementById('app');
-      const state = { authenticated: false, dashboard: null, pedidos: [], loading: true, error: '' };
+      const state = { authenticated: false, dashboard: null, pedidos: [], cupons: [], loading: true, error: '' };
 
       const getExportFilename = (response) => {
         const contentDisposition = response.headers.get('content-disposition') || '';
@@ -99,6 +99,7 @@
         const payload = await response.json();
         state.dashboard = payload.dashboard || null;
         state.pedidos = payload.pedidos || [];
+        state.cupons = payload.cupons || [];
         app.innerHTML = `
           <div class="topbar">
             <div>
@@ -122,6 +123,37 @@
             <div class="metric"><div class="label">Falhas</div><div class="value">${state.dashboard?.emailsFalhas ?? 0}</div></div>
             <div class="metric"><div class="label">PPV pagos</div><div class="value">${state.dashboard?.ppvPagos ?? 0}</div></div>
             <div class="metric"><div class="label">PPV transmissão pendente</div><div class="value">${state.dashboard?.ppvTransmissaoPendente ?? 0}</div></div>
+          </div>
+          <div class="card" style="margin-bottom:20px;">
+            <h2 style="margin-top:0;">Cupons de desconto</h2>
+            <p class="small" style="margin:0 0 16px;">Gere cupons de uso único com desconto em reais. Envie o código para o comprador aplicar no checkout.</p>
+            <form id="couponForm" style="display:grid; gap:12px; max-width:640px;">
+              <label class="small" style="display:grid; gap:6px;">
+                Valor do desconto (R$)
+                <input type="number" id="couponValue" min="1" step="0.01" placeholder="20.00" required />
+              </label>
+              <label class="small" style="display:grid; gap:6px;">
+                Código do cupom (opcional)
+                <input type="text" id="couponCode" placeholder="AFC-KARLA20" maxlength="40" />
+              </label>
+              <button class="btn btn-primary" type="submit" id="couponBtn">Gerar cupom</button>
+            </form>
+            <p id="couponResult" class="small" style="min-height:20px; margin:12px 0 0;"></p>
+            <table class="list" style="margin-top:16px;">
+              <thead>
+                <tr><th>Código</th><th>Desconto</th><th>Status</th><th>Criado em</th><th>Usado em</th></tr>
+              </thead>
+              <tbody>
+                ${(state.cupons || []).map((cupom) => `
+                  <tr>
+                    <td>${cupom.codigo}</td>
+                    <td>R$ ${Number(cupom.valor_desconto || 0).toFixed(2)}</td>
+                    <td><span class="pill ${cupom.usado ? 'warn' : 'ok'}">${cupom.usado ? 'usado' : 'disponível'}</span></td>
+                    <td>${cupom.created_at ? new Date(cupom.created_at).toLocaleString('pt-BR') : '-'}</td>
+                    <td>${cupom.usado_em ? new Date(cupom.usado_em).toLocaleString('pt-BR') : '-'}</td>
+                  </tr>`).join('') || '<tr><td colspan="5">Nenhum cupom criado ainda.</td></tr>'}
+              </tbody>
+            </table>
           </div>
           <div class="card" style="margin-bottom:20px;">
             <h2 style="margin-top:0;">Reenviar e-mail ao comprador</h2>
@@ -236,6 +268,56 @@
           await fetch('/api/admin/logout', { method: 'POST' });
           state.authenticated = false;
           renderLogin();
+        });
+        document.getElementById('couponForm').addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const submitButton = document.getElementById('couponBtn');
+          const resultBox = document.getElementById('couponResult');
+          const valorDesconto = document.getElementById('couponValue').value;
+          const codigo = document.getElementById('couponCode').value.trim();
+          const originalText = submitButton.textContent;
+
+          submitButton.disabled = true;
+          submitButton.textContent = 'Gerando...';
+          resultBox.style.color = 'var(--muted)';
+          resultBox.textContent = '';
+
+          try {
+            const response = await fetch('/api/admin/dashboard', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                acao: 'criar-cupom',
+                valorDesconto: Number(valorDesconto),
+                codigo: codigo || undefined
+              })
+            });
+            const payload = await response.json().catch(() => ({}));
+
+            if (response.status === 401) {
+              state.authenticated = false;
+              renderLogin();
+              return;
+            }
+
+            if (!response.ok) {
+              throw new Error(payload.error || 'Não foi possível criar o cupom.');
+            }
+
+            resultBox.style.color = '#b7f5c6';
+            resultBox.textContent = `Cupom criado: ${payload.cupom.codigo} • Desconto de R$ ${Number(payload.cupom.valor_desconto).toFixed(2)}`;
+            document.getElementById('couponValue').value = '';
+            document.getElementById('couponCode').value = '';
+            await renderDashboard();
+          } catch (error) {
+            resultBox.style.color = '#ff9b9b';
+            resultBox.textContent = error?.message || 'Não foi possível criar o cupom.';
+          } finally {
+            if (document.getElementById('couponBtn')) {
+              submitButton.disabled = false;
+              submitButton.textContent = originalText;
+            }
+          }
         });
         document.getElementById('resendForm').addEventListener('submit', async (event) => {
           event.preventDefault();
