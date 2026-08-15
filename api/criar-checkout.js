@@ -318,7 +318,6 @@ export default async function handler(request, response) {
     externalReference: pedido.externalReference,
     customerId,
     unitValue: itemPricing.unitValue,
-    totalValue: valorTotal,
     callback: {
       cancelUrl: buildReturnUrl(),
       expiredUrl: buildReturnUrl('expirado'),

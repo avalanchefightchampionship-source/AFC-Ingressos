@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  MAX_CREDIT_CARD_INSTALLMENTS,
   buildAsaasCheckoutCustomerData,
   buildAsaasCheckoutPayload,
-  buildAsaasCustomerPayload,
-  resolveMaxInstallmentCount,
-  supportsCreditCardInstallments
+  buildAsaasCustomerPayload
 } from '../services/asaas-checkout-payload.js';
 
 const baseArgs = {
@@ -20,58 +17,30 @@ const baseArgs = {
   }
 };
 
-test('supportsCreditCardInstallments habilita arquibancada e vip', () => {
-  assert.equal(supportsCreditCardInstallments('arquibancada'), true);
-  assert.equal(supportsCreditCardInstallments('vip'), true);
-  assert.equal(supportsCreditCardInstallments('pay-per-view'), false);
-});
-
-test('payload de arquibancada permite parcelamento em até 3x no cartão', () => {
+test('payload de arquibancada permite cartão à vista sem parcelamento', () => {
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'arquibancada',
-    ticket: { name: 'Ingresso Arquibancada', value: 60 },
-    totalValue: 60
+    ticket: { name: 'Ingresso Arquibancada', value: 60 }
   });
 
   assert.deepEqual(payload.billingTypes, ['PIX', 'CREDIT_CARD']);
-  assert.deepEqual(payload.chargeTypes, ['DETACHED', 'INSTALLMENT']);
-  assert.deepEqual(payload.installment, { maxInstallmentCount: MAX_CREDIT_CARD_INSTALLMENTS });
+  assert.deepEqual(payload.chargeTypes, ['DETACHED']);
+  assert.equal(payload.installment, undefined);
 });
 
-test('payload de arquibancada com valor baixo não oferece parcelamento', () => {
+test('payload de vip permite cartão à vista sem parcelamento', () => {
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
-    tipoIngresso: 'arquibancada',
-    ticket: { name: 'Ingresso Arquibancada', value: 15 },
-    totalValue: 15,
-    unitValue: 15
+    tipoIngresso: 'vip',
+    ticket: { name: 'Ingresso Cadeira VIP', value: 150 }
   });
 
   assert.deepEqual(payload.chargeTypes, ['DETACHED']);
   assert.equal(payload.installment, undefined);
 });
 
-test('resolveMaxInstallmentCount respeita valor mínimo por parcela', () => {
-  assert.equal(resolveMaxInstallmentCount(180, 'arquibancada'), 3);
-  assert.equal(resolveMaxInstallmentCount(60, 'arquibancada'), 3);
-  assert.equal(resolveMaxInstallmentCount(45, 'arquibancada'), 2);
-  assert.equal(resolveMaxInstallmentCount(15, 'arquibancada'), 0);
-});
-
-test('payload de vip permite parcelamento em até 3x no cartão', () => {
-  const payload = buildAsaasCheckoutPayload({
-    ...baseArgs,
-    tipoIngresso: 'vip',
-    ticket: { name: 'Ingresso Cadeira VIP', value: 150 },
-    totalValue: 150
-  });
-
-  assert.deepEqual(payload.chargeTypes, ['DETACHED', 'INSTALLMENT']);
-  assert.equal(payload.installment.maxInstallmentCount, 3);
-});
-
-test('payload de pay-per-view não inclui parcelamento', () => {
+test('payload de pay-per-view permite cartão à vista sem parcelamento', () => {
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'pay-per-view',
@@ -87,7 +56,6 @@ test('payload usa customer id quando informado', () => {
     ...baseArgs,
     tipoIngresso: 'arquibancada',
     ticket: { name: 'Ingresso Arquibancada', value: 60 },
-    totalValue: 60,
     customerId: 'cus_abc'
   });
 
