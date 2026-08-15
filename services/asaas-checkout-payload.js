@@ -59,6 +59,7 @@ export const buildAsaasCheckoutCustomerData = ({
   addressNumber,
   address,
   province,
+  state,
   cityCode
 }) => {
   const payload = {
@@ -67,11 +68,12 @@ export const buildAsaasCheckoutCustomerData = ({
     phone: mobilePhone,
     cpfCnpj,
     postalCode,
-    addressNumber: addressNumber,
+    addressNumber,
     address: address || 'Endereço informado pelo comprador',
     province: province || 'Centro'
   };
 
+  if (state) payload.state = state;
   if (Number.isInteger(cityCode)) payload.city = cityCode;
   return payload;
 };
@@ -82,6 +84,7 @@ export const buildAsaasCheckoutPayload = ({
   quantidade,
   externalReference,
   customerId,
+  customerData,
   callback,
   unitValue,
   totalValue
@@ -104,11 +107,16 @@ export const buildAsaasCheckoutPayload = ({
       description: 'Avalanche Fight Championship - 15 de agosto de 2026',
       quantity: quantidade,
       value: itemValue
-    }],
-    customer: customerId
+    }]
   };
 
-  // Asaas não permite customer e customerData no mesmo checkout; usamos só customer (já sincronizado antes).
+  // Asaas não permite customer e customerData juntos; preferimos customerData com endereço atual.
+  if (customerData) {
+    payload.customerData = customerData;
+  } else if (customerId) {
+    payload.customer = customerId;
+  }
+
   if (maxInstallmentCount > 1) {
     payload.installment = { maxInstallmentCount };
   }

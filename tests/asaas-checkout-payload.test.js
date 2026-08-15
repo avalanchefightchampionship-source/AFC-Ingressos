@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   MAX_CREDIT_CARD_INSTALLMENTS,
+  buildAsaasCheckoutCustomerData,
   buildAsaasCheckoutPayload,
   buildAsaasCustomerPayload,
   resolveMaxInstallmentCount,
@@ -81,16 +82,49 @@ test('payload de pay-per-view não inclui parcelamento', () => {
   assert.equal(payload.installment, undefined);
 });
 
-test('payload usa apenas customer id e não envia customerData junto', () => {
+test('payload prefere customerData e não envia customer id junto', () => {
+  const customerData = {
+    name: 'Cliente Teste',
+    email: 'cliente@example.com',
+    phone: '44999999999',
+    cpfCnpj: '39053344705',
+    postalCode: '87300000',
+    addressNumber: '123',
+    address: 'Rua Principal',
+    province: 'Centro',
+    state: 'PR',
+    city: 4104303
+  };
+
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'arquibancada',
     ticket: { name: 'Ingresso Arquibancada', value: 60 },
-    totalValue: 60
+    totalValue: 60,
+    customerId: 'cus_abc',
+    customerData
   });
 
-  assert.equal(payload.customer, 'cus_abc');
-  assert.equal(payload.customerData, undefined);
+  assert.deepEqual(payload.customerData, customerData);
+  assert.equal(payload.customer, undefined);
+});
+
+test('buildAsaasCheckoutCustomerData inclui UF e código IBGE', () => {
+  const customerData = buildAsaasCheckoutCustomerData({
+    name: 'Cliente Teste',
+    email: 'cliente@example.com',
+    mobilePhone: '44999999999',
+    cpfCnpj: '39053344705',
+    postalCode: '87300000',
+    addressNumber: '123',
+    address: 'Rua Principal',
+    province: 'Centro',
+    state: 'PR',
+    cityCode: 4104303
+  });
+
+  assert.equal(customerData.state, 'PR');
+  assert.equal(customerData.city, 4104303);
 });
 
 test('payload de cliente inclui endereço completo e desabilita notificações do Asaas', () => {
