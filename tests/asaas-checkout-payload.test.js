@@ -29,36 +29,38 @@ const sampleCustomerData = {
   city: 4104303
 };
 
-test('payload de arquibancada permite cartão à vista sem parcelamento', () => {
+test('payload de arquibancada permite somente PIX', () => {
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'arquibancada',
     ticket: { name: 'Ingresso Arquibancada', value: 60 }
   });
 
-  assert.deepEqual(payload.billingTypes, ['PIX', 'CREDIT_CARD']);
+  assert.deepEqual(payload.billingTypes, ['PIX']);
   assert.deepEqual(payload.chargeTypes, ['DETACHED']);
   assert.equal(payload.installment, undefined);
 });
 
-test('payload de vip permite cartão à vista sem parcelamento', () => {
+test('payload de vip permite somente PIX', () => {
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'vip',
     ticket: { name: 'Ingresso Cadeira VIP', value: 150 }
   });
 
+  assert.deepEqual(payload.billingTypes, ['PIX']);
   assert.deepEqual(payload.chargeTypes, ['DETACHED']);
   assert.equal(payload.installment, undefined);
 });
 
-test('payload de pay-per-view permite cartão à vista sem parcelamento', () => {
+test('payload de pay-per-view permite somente PIX', () => {
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'pay-per-view',
     ticket: { name: 'Pay-Per-View', value: 45 }
   });
 
+  assert.deepEqual(payload.billingTypes, ['PIX']);
   assert.deepEqual(payload.chargeTypes, ['DETACHED']);
   assert.equal(payload.installment, undefined);
 });

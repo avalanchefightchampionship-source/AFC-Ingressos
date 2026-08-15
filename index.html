@@ -940,7 +940,7 @@
             <li>Acesso ao evento</li>
             <li>Área de arquibancada</li>
             <li>Ingresso individual</li>
-            <li>Cartão à vista</li>
+            <li>Pagamento via PIX</li>
           </ul>
           <button class="btn btn-primary" onclick="openCheckout('arquibancada')">Comprar arquibancada</button>
         </article>
@@ -954,7 +954,7 @@
             <li>Acesso ao evento</li>
             <li>Lugar em cadeira</li>
             <li>Área mais próxima do cage</li>
-            <li>Cartão à vista</li>
+            <li>Pagamento via PIX</li>
           </ul>
           <button class="btn btn-primary" onclick="openCheckout('vip')">Comprar cadeira VIP</button>
         </article>
@@ -967,6 +967,7 @@
             <li>Transmissão ao vivo pela internet</li>
             <li>Assista de onde estiver</li>
             <li>Link enviado por e-mail antes do evento</li>
+            <li>Pagamento via PIX</li>
           </ul>
           <button class="btn btn-primary" onclick="openCheckout('pay-per-view')">Comprar Pay-Per-View</button>
         </article>
@@ -1002,7 +1003,7 @@
     <button class="close" onclick="closeCheckout()" aria-label="Fechar modal">×</button>
     <span class="eyebrow">Finalize seu pedido</span>
     <h2>Comprar ingresso</h2>
-    <p class="intro">Preencha os dados abaixo para seguir ao pagamento seguro.</p>
+    <p class="intro">Preencha os dados abaixo para pagar via PIX de forma segura.</p>
     <form class="form" onsubmit="submitOrder(event)">
       <label>
         Tipo de ingresso
@@ -1039,7 +1040,7 @@
         <div id="summaryDiscountRow" class="discount" style="display:none;"><span>Desconto</span><strong id="summaryDiscount">- R$ 0,00</strong></div>
         <div class="total"><span>Total</span><strong id="summaryTotal">R$ 60,00</strong></div>
       </div>
-      <button class="btn btn-primary" id="submitButton" type="submit">Ir para o pagamento</button>
+      <button class="btn btn-primary" id="submitButton" type="submit">Ir para o pagamento PIX</button>
       <p class="note">Você será direcionado ao ambiente seguro do Asaas.</p>
       <div class="success" id="success"></div>
     </form>
@@ -1295,7 +1296,7 @@
 
     const submitButton = document.getElementById('submitButton');
     submitButton.disabled = true;
-    submitButton.textContent = 'Abrindo pagamento...';
+    submitButton.textContent = 'Abrindo pagamento PIX...';
 
     try {
       const response = await fetch('/api/criar-checkout', {
@@ -1340,7 +1341,7 @@
       validationMessage.textContent = error.message || 'Não foi possível criar o pagamento. Tente novamente.';
       validationMessage.style.display = 'block';
       submitButton.disabled = false;
-      submitButton.textContent = 'Ir para o pagamento';
+      submitButton.textContent = 'Ir para o pagamento PIX';
     }
   }
 

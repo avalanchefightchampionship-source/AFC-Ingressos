@@ -46,7 +46,7 @@ export const buildAsaasCheckoutPayload = ({
   const itemValue = unitValue ?? ticket.value;
 
   const payload = {
-    billingTypes: ['PIX', 'CREDIT_CARD'],
+    billingTypes: ['PIX'],
     chargeTypes: ['DETACHED'],
     minutesToExpire: 60,
     externalReference,
