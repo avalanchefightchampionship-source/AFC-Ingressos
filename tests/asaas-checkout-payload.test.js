@@ -3,18 +3,30 @@ import test from 'node:test';
 import {
   buildAsaasCheckoutCustomerData,
   buildAsaasCheckoutPayload,
-  buildAsaasCustomerPayload
+  parseCheckoutAddressNumber
 } from '../services/asaas-checkout-payload.js';
 
 const baseArgs = {
   quantidade: 1,
   externalReference: 'ref-123',
-  customerId: 'cus_abc',
   callback: {
     cancelUrl: 'https://example.com/',
     expiredUrl: 'https://example.com/?checkout=expirado',
     successUrl: 'https://example.com/?checkout=sucesso'
   }
+};
+
+const sampleCustomerData = {
+  name: 'Cliente Teste',
+  email: 'cliente@example.com',
+  phone: '44999999999',
+  cpfCnpj: '39053344705',
+  postalCode: '87300000',
+  addressNumber: 123,
+  address: 'Rua Principal',
+  province: 'Centro',
+  state: 'PR',
+  city: 4104303
 };
 
 test('payload de arquibancada permite cartão à vista sem parcelamento', () => {
@@ -51,19 +63,25 @@ test('payload de pay-per-view permite cartão à vista sem parcelamento', () => 
   assert.equal(payload.installment, undefined);
 });
 
-test('payload usa customer id quando informado', () => {
+test('payload usa customerData quando informado', () => {
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'arquibancada',
     ticket: { name: 'Ingresso Arquibancada', value: 60 },
-    customerId: 'cus_abc'
+    customerData: sampleCustomerData
   });
 
-  assert.equal(payload.customer, 'cus_abc');
-  assert.equal(payload.customerData, undefined);
+  assert.deepEqual(payload.customerData, sampleCustomerData);
+  assert.equal(payload.customer, undefined);
 });
 
-test('buildAsaasCheckoutCustomerData inclui UF e código IBGE', () => {
+test('parseCheckoutAddressNumber converte número e trata S/N', () => {
+  assert.equal(parseCheckoutAddressNumber('123'), 123);
+  assert.equal(parseCheckoutAddressNumber('123A'), 123);
+  assert.equal(parseCheckoutAddressNumber('S/N'), 1);
+});
+
+test('buildAsaasCheckoutCustomerData inclui UF, IBGE e addressNumber numérico', () => {
   const customerData = buildAsaasCheckoutCustomerData({
     name: 'Cliente Teste',
     email: 'cliente@example.com',
@@ -79,27 +97,6 @@ test('buildAsaasCheckoutCustomerData inclui UF e código IBGE', () => {
 
   assert.equal(customerData.state, 'PR');
   assert.equal(customerData.city, 4104303);
-});
-
-test('payload de cliente inclui endereço completo e desabilita notificações do Asaas', () => {
-  const payload = buildAsaasCustomerPayload({
-    name: 'Cliente Teste',
-    email: 'cliente@example.com',
-    mobilePhone: '44999999999',
-    cpfCnpj: '39053344705',
-    postalCode: '87300000',
-    addressNumber: '123',
-    address: 'Rua Principal',
-    province: 'Centro',
-    cityName: 'Campo Mourão',
-    state: 'PR',
-    cityCode: 4104303
-  });
-
-  assert.equal(payload.notificationDisabled, true);
-  assert.equal(payload.province, 'Centro');
-  assert.equal(payload.cityName, 'Campo Mourão');
-  assert.equal(payload.state, 'PR');
-  assert.equal(payload.city, 4104303);
-  assert.equal(payload.email, 'cliente@example.com');
+  assert.equal(customerData.addressNumber, 123);
+  assert.equal(customerData.email, 'cliente@example.com');
 });

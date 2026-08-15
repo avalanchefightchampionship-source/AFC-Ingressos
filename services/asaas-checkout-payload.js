@@ -1,33 +1,8 @@
-export const buildAsaasCustomerPayload = ({
-  name,
-  email,
-  mobilePhone,
-  cpfCnpj,
-  postalCode,
-  addressNumber,
-  address,
-  province,
-  cityName,
-  state,
-  cityCode
-}) => {
-  const payload = {
-    name,
-    email,
-    mobilePhone,
-    cpfCnpj,
-    postalCode,
-    addressNumber,
-    notificationDisabled: true
-  };
-
-  if (address) payload.address = address;
-  if (province) payload.province = province;
-  if (cityName) payload.cityName = cityName;
-  if (state) payload.state = state;
-  if (Number.isInteger(cityCode)) payload.city = cityCode;
-
-  return payload;
+export const parseCheckoutAddressNumber = (value) => {
+  const digits = String(value || '').replace(/\D/g, '');
+  const parsed = Number.parseInt(digits, 10);
+  if (Number.isInteger(parsed) && parsed > 0) return parsed;
+  return 1;
 };
 
 export const buildAsaasCheckoutCustomerData = ({
@@ -48,7 +23,7 @@ export const buildAsaasCheckoutCustomerData = ({
     phone: mobilePhone,
     cpfCnpj,
     postalCode,
-    addressNumber,
+    addressNumber: parseCheckoutAddressNumber(addressNumber),
     address: address || 'Endereço informado pelo comprador',
     province: province || 'Centro'
   };

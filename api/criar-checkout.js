@@ -3,7 +3,10 @@ import {
   createPendingOrder,
   flagCheckoutFailure
 } from '../services/pedidos-service.js';
-import { buildAsaasCheckoutPayload, buildAsaasCustomerPayload } from '../services/asaas-checkout-payload.js';
+import {
+  buildAsaasCheckoutCustomerData,
+  buildAsaasCheckoutPayload
+} from '../services/asaas-checkout-payload.js';
 import {
   calculatePricingWithCupom,
   CUPOM_INDISPONIVEL_MESSAGE,
@@ -149,6 +152,9 @@ export default async function handler(request, response) {
   }
 
   const apiUrl = (process.env.ASAAS_API_URL || 'https://api-sandbox.asaas.com/v3').replace(/\/$/, '');
+  if (apiUrl.includes('sandbox') && String(process.env.SITE_URL || '').includes('afcevents.com.br')) {
+    console.error('ASAAS_API_URL aponta para sandbox em produção. Configure https://api.asaas.com/v3 na Vercel.');
+  }
   let siteUrl;
   try {
     siteUrl = normalizeSiteUrl(process.env.SITE_URL || 'http://localhost:3000');
@@ -240,7 +246,15 @@ export default async function handler(request, response) {
     access_token: process.env.ASAAS_API_KEY
   };
 
-  const customerPayload = buildAsaasCustomerPayload({
+  if (!Number.isInteger(addressData.cityCode)) {
+    console.error('CEP sem código IBGE da cidade.', { postalCode: cleanPostalCode });
+    await flagCheckoutFailure(pedido.id);
+    return sendJson(response, 400, {
+      error: 'Não foi possível validar a cidade do CEP informado. Confira o CEP e tente novamente.'
+    });
+  }
+
+  const checkoutCustomerData = buildAsaasCheckoutCustomerData({
     name: cleanName,
     email: cleanEmail,
     mobilePhone: cleanPhone,
@@ -249,74 +263,16 @@ export default async function handler(request, response) {
     addressNumber: cleanAddressNumber,
     address: addressData.address,
     province: addressData.province,
-    cityName: addressData.cityName,
     state: addressData.state,
     cityCode: addressData.cityCode
   });
-
-  let customerId;
-  try {
-    const customerSearchResponse = await fetch(
-      `${apiUrl}/customers?cpfCnpj=${encodeURIComponent(cleanCpfCnpj)}&limit=1`,
-      { method: 'GET', headers: { accept: 'application/json', access_token: process.env.ASAAS_API_KEY } }
-    );
-    const customerSearchData = await customerSearchResponse.json().catch(() => ({}));
-
-    if (!customerSearchResponse.ok) {
-      console.error('Falha ao consultar cliente no Asaas.', {
-        status: customerSearchResponse.status,
-        errorCodes: Array.isArray(customerSearchData.errors)
-          ? customerSearchData.errors.map(({ code }) => code)
-          : []
-      });
-      await flagCheckoutFailure(pedido.id);
-      return sendJson(response, 502, { error: 'Não foi possível preparar os dados do comprador.' });
-    }
-
-    const existingCustomer = Array.isArray(customerSearchData.data)
-      ? customerSearchData.data[0]
-      : null;
-    const customerResponse = existingCustomer?.id
-      ? await fetch(`${apiUrl}/customers/${encodeURIComponent(existingCustomer.id)}`, {
-          method: 'PUT',
-          headers: asaasHeaders,
-          body: JSON.stringify(customerPayload)
-        })
-      : await fetch(`${apiUrl}/customers`, {
-          method: 'POST',
-          headers: asaasHeaders,
-          body: JSON.stringify(customerPayload)
-        });
-    const customerData = await customerResponse.json().catch(() => ({}));
-
-    if (!customerResponse.ok || !customerData.id) {
-      console.error('Falha ao sincronizar cliente no Asaas.', {
-        operation: existingCustomer?.id ? 'update' : 'create',
-        status: customerResponse.status,
-        errorCodes: Array.isArray(customerData.errors)
-          ? customerData.errors.map(({ code }) => code)
-          : []
-      });
-      await flagCheckoutFailure(pedido.id);
-      return sendJson(response, 502, { error: 'Não foi possível preparar os dados do comprador.' });
-    }
-
-    customerId = customerData.id;
-  } catch (error) {
-    console.error('Erro de comunicação ao preparar cliente no Asaas.', {
-      name: error?.name || 'Error',
-      message: error?.message || 'Erro desconhecido'
-    });
-    await flagCheckoutFailure(pedido.id);
-    return sendJson(response, 502, { error: 'Não foi possível preparar os dados do comprador.' });
-  }
 
   const checkoutPayload = buildAsaasCheckoutPayload({
     tipoIngresso,
     ticket,
     quantidade: itemPricing.quantidade,
     externalReference: pedido.externalReference,
-    customerId,
+    customerData: checkoutCustomerData,
     unitValue: itemPricing.unitValue,
     callback: {
       cancelUrl: buildReturnUrl(),
@@ -328,7 +284,9 @@ export default async function handler(request, response) {
   console.info('Sending checkout creation to Asaas.', {
     pedidoId: pedido.id,
     codigoPedido: pedido.codigoPedido,
-    externalReference: pedido.externalReference
+    externalReference: pedido.externalReference,
+    customerMode: 'customerData',
+    hasCityCode: Number.isInteger(addressData.cityCode)
   });
 
   try {
@@ -376,7 +334,7 @@ export default async function handler(request, response) {
     try {
       await attachCheckoutToOrder(pedido.id, {
         checkoutId: data.id,
-        customerId,
+        customerId: null,
         externalReference: pedido.externalReference
       });
       console.info('Order updated with checkout data in Supabase.', {
