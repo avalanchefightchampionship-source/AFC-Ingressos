@@ -3,13 +3,14 @@ import {
   createPendingOrder,
   flagCheckoutFailure
 } from '../services/pedidos-service.js';
-import { buildAsaasCheckoutPayload, buildAsaasCustomerPayload } from '../services/asaas-checkout-payload.js';
+import { buildAsaasCheckoutPayload, buildAsaasCustomerPayload, buildAsaasCheckoutCustomerData } from '../services/asaas-checkout-payload.js';
 import {
   calculatePricingWithCupom,
-  calculateUnitValueForCheckout,
-  CUPOM_INDISPONIVEL_MESSAGE
+  CUPOM_INDISPONIVEL_MESSAGE,
+  resolveCheckoutItemPricing
 } from '../services/cupons-service.js';
 import { getTicket } from '../services/ticket-pricing.js';
+import { fetchAddressByPostalCode } from '../services/viacep-service.js';
 
 const sendJson = (response, status, body) => {
   response.status(status).json(body);
@@ -171,8 +172,19 @@ export default async function handler(request, response) {
   }
 
   const valorTotal = pricing.total;
-  const unitValue = calculateUnitValueForCheckout(valorTotal, quantidade);
+  const itemPricing = resolveCheckoutItemPricing(valorTotal, quantidade);
   let pedido;
+  let addressData;
+
+  try {
+    addressData = await fetchAddressByPostalCode(cleanPostalCode);
+  } catch (error) {
+    return sendJson(response, 400, {
+      error: error?.message === 'CEP não encontrado.'
+        ? 'CEP não encontrado. Confira o CEP informado.'
+        : 'Não foi possível validar o CEP informado.'
+    });
+  }
 
   console.info('Checkout flow started.', {
     tipoIngresso,
@@ -233,8 +245,23 @@ export default async function handler(request, response) {
     email: cleanEmail,
     mobilePhone: cleanPhone,
     cpfCnpj: cleanCpfCnpj,
-    postalCode: cleanPostalCode,
-    addressNumber: cleanAddressNumber
+    postalCode: addressData.postalCode,
+    addressNumber: cleanAddressNumber,
+    address: addressData.address,
+    province: addressData.province,
+    cityCode: addressData.cityCode
+  });
+
+  const checkoutCustomerData = buildAsaasCheckoutCustomerData({
+    name: cleanName,
+    email: cleanEmail,
+    mobilePhone: cleanPhone,
+    cpfCnpj: cleanCpfCnpj,
+    postalCode: addressData.postalCode,
+    addressNumber: cleanAddressNumber,
+    address: addressData.address,
+    province: addressData.province,
+    cityCode: addressData.cityCode
   });
 
   let customerId;
@@ -297,10 +324,12 @@ export default async function handler(request, response) {
   const checkoutPayload = buildAsaasCheckoutPayload({
     tipoIngresso,
     ticket,
-    quantidade,
+    quantidade: itemPricing.quantidade,
     externalReference: pedido.externalReference,
     customerId,
-    unitValue,
+    customerData: checkoutCustomerData,
+    unitValue: itemPricing.unitValue,
+    totalValue: valorTotal,
     callback: {
       cancelUrl: buildReturnUrl(),
       expiredUrl: buildReturnUrl('expirado'),

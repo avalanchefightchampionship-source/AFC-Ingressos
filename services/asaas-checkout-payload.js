@@ -1,9 +1,22 @@
 export const MAX_CREDIT_CARD_INSTALLMENTS = 3;
+export const MIN_INSTALLMENT_VALUE = 20;
 
 const INSTALLMENT_TICKET_TYPES = new Set(['arquibancada', 'vip']);
 
 export const supportsCreditCardInstallments = (tipoIngresso) =>
   INSTALLMENT_TICKET_TYPES.has(tipoIngresso);
+
+export const resolveMaxInstallmentCount = (totalValue, tipoIngresso) => {
+  if (!supportsCreditCardInstallments(tipoIngresso)) return 0;
+
+  const total = Number(totalValue);
+  if (!Number.isFinite(total) || total <= 0) return 0;
+
+  const byMinimumValue = Math.floor(total / MIN_INSTALLMENT_VALUE);
+  if (byMinimumValue <= 1) return 0;
+
+  return Math.min(MAX_CREDIT_CARD_INSTALLMENTS, byMinimumValue);
+};
 
 export const buildAsaasCustomerPayload = ({
   name,
@@ -12,17 +25,52 @@ export const buildAsaasCustomerPayload = ({
   cpfCnpj,
   postalCode,
   addressNumber,
-  province = 'PR'
-}) => ({
+  address,
+  province,
+  cityCode
+}) => {
+  const payload = {
+    name,
+    email,
+    mobilePhone,
+    cpfCnpj,
+    postalCode,
+    addressNumber,
+    notificationDisabled: true
+  };
+
+  if (address) payload.address = address;
+  if (province) payload.province = province;
+  if (Number.isInteger(cityCode)) payload.city = cityCode;
+
+  return payload;
+};
+
+export const buildAsaasCheckoutCustomerData = ({
   name,
   email,
   mobilePhone,
   cpfCnpj,
   postalCode,
   addressNumber,
+  address,
   province,
-  notificationDisabled: true
-});
+  cityCode
+}) => {
+  const payload = {
+    name,
+    email,
+    phone: mobilePhone,
+    cpfCnpj,
+    postalCode,
+    addressNumber: addressNumber,
+    address: address || 'Endereço informado pelo comprador',
+    province: province || 'Centro'
+  };
+
+  if (Number.isInteger(cityCode)) payload.city = cityCode;
+  return payload;
+};
 
 export const buildAsaasCheckoutPayload = ({
   tipoIngresso,
@@ -30,15 +78,20 @@ export const buildAsaasCheckoutPayload = ({
   quantidade,
   externalReference,
   customerId,
+  customerData,
   callback,
-  unitValue
+  unitValue,
+  totalValue
 }) => {
   const itemValue = unitValue ?? ticket.value;
+  const maxInstallmentCount = resolveMaxInstallmentCount(
+    totalValue ?? itemValue * quantidade,
+    tipoIngresso
+  );
+
   const payload = {
     billingTypes: ['PIX', 'CREDIT_CARD'],
-    chargeTypes: supportsCreditCardInstallments(tipoIngresso)
-      ? ['DETACHED', 'INSTALLMENT']
-      : ['DETACHED'],
+    chargeTypes: maxInstallmentCount > 1 ? ['DETACHED', 'INSTALLMENT'] : ['DETACHED'],
     minutesToExpire: 60,
     externalReference,
     callback,
@@ -52,8 +105,12 @@ export const buildAsaasCheckoutPayload = ({
     customer: customerId
   };
 
-  if (supportsCreditCardInstallments(tipoIngresso)) {
-    payload.installment = { maxInstallmentCount: MAX_CREDIT_CARD_INSTALLMENTS };
+  if (customerData) {
+    payload.customerData = customerData;
+  }
+
+  if (maxInstallmentCount > 1) {
+    payload.installment = { maxInstallmentCount };
   }
 
   return payload;

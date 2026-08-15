@@ -11,7 +11,7 @@ const sendJson = (response, status, body) => {
 export const getDashboardData = async (supabase) => {
   const { data: pedidos, error: pedidosError } = await supabase
     .from('pedidos')
-    .select('id, nome, email, quantidade, valor_total, created_at, status_pagamento, tipo_ingresso, email_enviado, email_tentativas, email_ultimo_erro, transmissao_enviada, transmissao_tentativas, transmissao_ultimo_erro')
+    .select('id, nome, email, quantidade, valor_total, created_at, status_pagamento, status_pedido, tipo_ingresso, email_enviado, email_tentativas, email_ultimo_erro, transmissao_enviada, transmissao_tentativas, transmissao_ultimo_erro')
     .order('created_at', { ascending: false })
     .limit(10);
 

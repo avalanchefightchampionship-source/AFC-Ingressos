@@ -7,6 +7,7 @@ import {
   criarCupomDesconto,
   markCupomAsUsed,
   normalizeCupomCodigo,
+  resolveCheckoutItemPricing,
   validateValorDesconto
 } from '../services/cupons-service.js';
 
@@ -89,6 +90,12 @@ test('calculatePricingWithCupom traduz erro de infraestrutura do Supabase', asyn
 
 test('calculateUnitValueForCheckout calcula valor unitário com desconto', () => {
   assert.equal(calculateUnitValueForCheckout(100, 2), 50);
+});
+
+test('resolveCheckoutItemPricing evita divergência de centavos no Asaas', () => {
+  const pricing = resolveCheckoutItemPricing(160, 3);
+  assert.equal(pricing.unitValue, 160);
+  assert.equal(pricing.quantidade, 1);
 });
 
 test('criarCupomDesconto gera código automático quando não informado', async () => {

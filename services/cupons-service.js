@@ -127,3 +127,23 @@ export const markCupomAsUsed = async (
 
 export const calculateUnitValueForCheckout = (valorTotal, quantidade) =>
   roundMoney(valorTotal / quantidade);
+
+export const resolveCheckoutItemPricing = (valorTotal, quantidade) => {
+  const total = roundMoney(valorTotal);
+  const safeQuantity = Number.isInteger(quantidade) && quantidade > 0 ? quantidade : 1;
+  const unitValue = calculateUnitValueForCheckout(total, safeQuantity);
+
+  if (roundMoney(unitValue * safeQuantity) === total) {
+    return {
+      unitValue,
+      quantidade: safeQuantity,
+      total
+    };
+  }
+
+  return {
+    unitValue: total,
+    quantidade: 1,
+    total
+  };
+};

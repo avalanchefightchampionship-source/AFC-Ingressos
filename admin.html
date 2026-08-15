@@ -229,7 +229,7 @@
           <div class="card">
             <table class="list">
               <thead>
-                <tr><th>Data</th><th>Comprador</th><th>Tipo</th><th>E-mail</th><th>Qtd.</th><th>Valor</th><th>Status</th><th>E-mail</th><th>Transmissão</th></tr>
+                <tr><th>Data</th><th>Comprador</th><th>Tipo</th><th>E-mail</th><th>Qtd.</th><th>Valor</th><th>Pagamento</th><th>Checkout</th><th>E-mail</th><th>Transmissão</th></tr>
               </thead>
               <tbody>
                 ${(state.pedidos || []).map((pedido) => `
@@ -241,6 +241,7 @@
                     <td>${pedido.quantidade}</td>
                     <td>R$ ${Number(pedido.valor_total || 0).toFixed(2)}</td>
                     <td><span class="pill">${pedido.status_pagamento}</span></td>
+                    <td><span class="pill ${pedido.status_pedido === 'CHECKOUT_CRIADO' ? 'ok' : pedido.status_pedido === 'FALHA_CHECKOUT' ? 'bad' : 'warn'}">${pedido.status_pedido || '-'}</span></td>
                     <td><span class="pill ${pedido.status_email === 'enviado' ? 'ok' : pedido.status_email === 'falha' ? 'bad' : 'warn'}">${pedido.status_email}</span></td>
                     <td>${pedido.tipo_ingresso === 'pay-per-view'
                       ? `<span class="pill ${pedido.transmissao_enviada ? 'ok' : 'warn'}">${pedido.transmissao_enviada ? 'enviada' : 'pendente'}</span>`
