@@ -81,31 +81,19 @@ test('payload de pay-per-view não inclui parcelamento', () => {
   assert.equal(payload.installment, undefined);
 });
 
-test('payload inclui customerData quando informado', () => {
-  const customerData = {
-    name: 'Cliente Teste',
-    email: 'cliente@example.com',
-    phone: '44999999999',
-    cpfCnpj: '39053344705',
-    postalCode: '87300000',
-    addressNumber: '123',
-    address: 'Rua Principal',
-    province: 'Centro',
-    city: 4104303
-  };
-
+test('payload usa apenas customer id e não envia customerData junto', () => {
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'arquibancada',
     ticket: { name: 'Ingresso Arquibancada', value: 60 },
-    totalValue: 60,
-    customerData
+    totalValue: 60
   });
 
-  assert.deepEqual(payload.customerData, customerData);
+  assert.equal(payload.customer, 'cus_abc');
+  assert.equal(payload.customerData, undefined);
 });
 
-test('payload de cliente desabilita notificações automáticas do Asaas', () => {
+test('payload de cliente inclui endereço completo e desabilita notificações do Asaas', () => {
   const payload = buildAsaasCustomerPayload({
     name: 'Cliente Teste',
     email: 'cliente@example.com',
@@ -115,11 +103,15 @@ test('payload de cliente desabilita notificações automáticas do Asaas', () =>
     addressNumber: '123',
     address: 'Rua Principal',
     province: 'Centro',
+    cityName: 'Campo Mourão',
+    state: 'PR',
     cityCode: 4104303
   });
 
   assert.equal(payload.notificationDisabled, true);
   assert.equal(payload.province, 'Centro');
+  assert.equal(payload.cityName, 'Campo Mourão');
+  assert.equal(payload.state, 'PR');
   assert.equal(payload.city, 4104303);
   assert.equal(payload.email, 'cliente@example.com');
 });

@@ -27,6 +27,8 @@ export const buildAsaasCustomerPayload = ({
   addressNumber,
   address,
   province,
+  cityName,
+  state,
   cityCode
 }) => {
   const payload = {
@@ -41,6 +43,8 @@ export const buildAsaasCustomerPayload = ({
 
   if (address) payload.address = address;
   if (province) payload.province = province;
+  if (cityName) payload.cityName = cityName;
+  if (state) payload.state = state;
   if (Number.isInteger(cityCode)) payload.city = cityCode;
 
   return payload;
@@ -78,7 +82,6 @@ export const buildAsaasCheckoutPayload = ({
   quantidade,
   externalReference,
   customerId,
-  customerData,
   callback,
   unitValue,
   totalValue
@@ -105,10 +108,7 @@ export const buildAsaasCheckoutPayload = ({
     customer: customerId
   };
 
-  if (customerData) {
-    payload.customerData = customerData;
-  }
-
+  // Asaas não permite customer e customerData no mesmo checkout; usamos só customer (já sincronizado antes).
   if (maxInstallmentCount > 1) {
     payload.installment = { maxInstallmentCount };
   }
