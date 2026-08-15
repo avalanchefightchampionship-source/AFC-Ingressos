@@ -26,6 +26,7 @@
       --shadow: 0 20px 55px rgba(0,0,0,.4);
       --radius: 18px;
       --container: min(1160px, calc(100% - 36px));
+      --site-top-height: 118px;
     }
 
     * { box-sizing: border-box; }
@@ -70,22 +71,117 @@
     img { display: block; max-width: 100%; }
     .container { width: var(--container); margin: 0 auto; }
 
-    header {
+    .site-top {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       z-index: 50;
+      background: rgba(0,0,0,.84);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 10px 35px rgba(0,0,0,.22);
+    }
+
+    .event-countdown-bar {
+      border-bottom: 1px solid rgba(225,6,0,.18);
+      background: linear-gradient(180deg, rgba(225,6,0,.07), rgba(225,6,0,.02));
+      padding: 0 max(18px, calc((100% - 1160px) / 2));
+    }
+
+    .event-countdown-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      width: 100%;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 8px 0 9px;
+    }
+
+    .event-countdown-urgency {
+      margin: 0;
+      flex: 1;
+      min-width: 0;
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.72);
+      line-height: 1.35;
+    }
+
+    .event-countdown-urgency strong {
+      color: var(--red-strong);
+      font-weight: 800;
+    }
+
+    .event-countdown-timer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .countdown-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      padding: 4px 7px 5px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+
+    .countdown-unit span {
+      font-family: 'Bebas Neue', 'Montserrat', sans-serif;
+      font-size: 1.2rem;
+      line-height: 1;
+      letter-spacing: .04em;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .countdown-unit small {
+      margin-top: 1px;
+      font-size: .52rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.55);
+    }
+
+    .countdown-sep {
+      font-family: 'Bebas Neue', 'Montserrat', sans-serif;
+      font-size: 1rem;
+      line-height: 1;
+      color: rgba(255,255,255,.28);
+      transform: translateY(-1px);
+      user-select: none;
+    }
+
+    .event-countdown-bar.is-live .countdown-unit span { color: var(--red-strong); }
+
+    header {
+      position: relative;
+      top: auto;
+      left: auto;
+      right: auto;
+      z-index: auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 18px;
       height: 78px;
       padding: 0 max(18px, calc((100% - 1160px) / 2));
-      background: rgba(0,0,0,.78);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      box-shadow: 0 10px 35px rgba(0,0,0,.22);
+      background: transparent;
+      backdrop-filter: none;
+      border-bottom: 0;
+      box-shadow: none;
     }
 
     .brand { display: flex; align-items: center; gap: 12px; }
@@ -126,7 +222,7 @@
     .hero {
       position: relative;
       min-height: 100vh;
-      padding-top: 78px;
+      padding-top: var(--site-top-height);
       display: flex;
       align-items: center;
       overflow: hidden;
@@ -543,12 +639,26 @@
 
     @media (max-width: 640px) {
       :root { --container: min(100% - 24px, 1160px); }
+      .event-countdown-inner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 8px 0 9px;
+      }
+      .event-countdown-urgency {
+        font-size: .6rem;
+        letter-spacing: .1em;
+        text-align: center;
+      }
+      .event-countdown-timer { justify-content: center; }
+      .countdown-unit { min-width: 38px; padding: 3px 6px 4px; }
+      .countdown-unit span { font-size: 1.05rem; }
       .ticket-options { grid-template-columns: 1fr; }
       header { height: 70px; padding: 0 14px; }
       .brand-text { display: none; }
       .logo { width: 82px; height: 44px; }
       .top-cta { display: none; }
-      .hero { min-height: 86vh; align-items: flex-end; padding-top: 70px; }
+      .hero { min-height: 86vh; align-items: flex-end; padding-top: var(--site-top-height); }
       .hero-content { padding: 48px 0 56px; }
       .hero h1 { font-size: clamp(2.4rem, 12vw, 3.35rem); }
       .hero p { font-size: .98rem; }
@@ -617,19 +727,37 @@
 </head>
 <body>
 <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=3169175496623984&ev=PageView&noscript=1" /></noscript>
-<header>
-  <a class="brand" href="#inicio">
-    <img class="logo" src="logo-afc.jpg" alt="Logo AFC" />
-    <span class="brand-text"><strong>Avalanche</strong><span>Fight Championship</span></span>
-  </a>
-  <nav class="nav">
-    <a href="#evento">O evento</a>
-    <a href="#atletas">Atletas</a>
-    <a href="#ingressos">Ingressos</a>
-    <a href="#local">Local</a>
-  </nav>
-  <button class="top-cta" onclick="openCheckout('arquibancada')" aria-label="Comprar ingresso arquibancada">Comprar ingresso</button>
-</header>
+<div class="site-top" id="siteTop">
+  <div class="event-countdown-bar" id="eventCountdownBar" aria-live="polite">
+    <div class="event-countdown-inner">
+      <p class="event-countdown-urgency" id="eventCountdownUrgency">
+        <strong>Faltam poucas horas!</strong> Garanta seu ingresso — 15/08 às 19h, Campo Mourão
+      </p>
+      <div class="event-countdown-timer" id="eventCountdownTimer">
+        <div class="countdown-unit"><span id="cd-days">00</span><small>Dias</small></div>
+        <span class="countdown-sep" aria-hidden="true">:</span>
+        <div class="countdown-unit"><span id="cd-hours">00</span><small>Horas</small></div>
+        <span class="countdown-sep" aria-hidden="true">:</span>
+        <div class="countdown-unit"><span id="cd-minutes">00</span><small>Min</small></div>
+        <span class="countdown-sep" aria-hidden="true">:</span>
+        <div class="countdown-unit"><span id="cd-seconds">00</span><small>Seg</small></div>
+      </div>
+    </div>
+  </div>
+  <header>
+    <a class="brand" href="#inicio">
+      <img class="logo" src="logo-afc.jpg" alt="Logo AFC" />
+      <span class="brand-text"><strong>Avalanche</strong><span>Fight Championship</span></span>
+    </a>
+    <nav class="nav">
+      <a href="#evento">O evento</a>
+      <a href="#atletas">Atletas</a>
+      <a href="#ingressos">Ingressos</a>
+      <a href="#local">Local</a>
+    </nav>
+    <button class="top-cta" onclick="openCheckout('arquibancada')" aria-label="Comprar ingresso arquibancada">Comprar ingresso</button>
+  </header>
+</div>
 <main>
   <section class="hero" id="inicio">
     <div class="container hero-content">
@@ -1177,6 +1305,64 @@
   });
 
   handleCheckoutReturn();
+
+  const EVENT_START_MS = Date.parse('2026-08-15T19:00:00-03:00');
+  const siteTop = document.getElementById('siteTop');
+  const countdownBar = document.getElementById('eventCountdownBar');
+  const countdownUrgency = document.getElementById('eventCountdownUrgency');
+  const countdownFields = {
+    days: document.getElementById('cd-days'),
+    hours: document.getElementById('cd-hours'),
+    minutes: document.getElementById('cd-minutes'),
+    seconds: document.getElementById('cd-seconds')
+  };
+
+  const padCountdown = (value) => String(Math.max(0, value)).padStart(2, '0');
+
+  const syncSiteTopHeight = () => {
+    if (!siteTop) return;
+    document.documentElement.style.setProperty('--site-top-height', `${siteTop.offsetHeight}px`);
+  };
+
+  function updateEventCountdown() {
+    const remainingMs = EVENT_START_MS - Date.now();
+
+    if (remainingMs <= 0) {
+      countdownBar.classList.add('is-live');
+      countdownUrgency.innerHTML = '<strong>É hoje!</strong> Avalanche FC começa às 19h — nos vemos no ginásio';
+      countdownFields.days.textContent = '00';
+      countdownFields.hours.textContent = '00';
+      countdownFields.minutes.textContent = '00';
+      countdownFields.seconds.textContent = '00';
+      syncSiteTopHeight();
+      return;
+    }
+
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    countdownFields.days.textContent = padCountdown(days);
+    countdownFields.hours.textContent = padCountdown(hours);
+    countdownFields.minutes.textContent = padCountdown(minutes);
+    countdownFields.seconds.textContent = padCountdown(seconds);
+
+    if (days === 0) {
+      countdownUrgency.innerHTML = '<strong>Faltam poucas horas!</strong> Garanta seu ingresso — 15/08 às 19h, Campo Mourão';
+    } else {
+      countdownUrgency.innerHTML = '<strong>Últimas horas!</strong> Garanta seu ingresso — evento 15/08 às 19h, Campo Mourão';
+    }
+  }
+
+  updateEventCountdown();
+  syncSiteTopHeight();
+  window.addEventListener('resize', syncSiteTopHeight);
+  setInterval(() => {
+    updateEventCountdown();
+    syncSiteTopHeight();
+  }, 1000);
 </script>
 </body>
 </html>
