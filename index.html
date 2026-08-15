@@ -1053,7 +1053,7 @@
   let appliedCoupon = null;
   const params = new URLSearchParams(location.search);
   const incomingRef = params.get('ref');
-  if (incomingRef) localStorage.setItem('afc_ref', incomingRef);
+  if (incomingRef) localStorage.setItem('afc_ref', incomingRef.slice(0, 100));
 
   function money(v) {
     return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -1165,7 +1165,7 @@
         body: JSON.stringify({
           acao: 'validar-cupom',
           tipoIngresso: type,
-          quantidade: quantity,
+          quantidade: Number(quantity),
           codigoCupom
         })
       });
@@ -1309,7 +1309,7 @@
           cep: postalCodeDigits,
           numeroEndereco: addressNumber,
           tipoIngresso: type,
-          quantidade: quantity,
+          quantidade: Number(quantity),
           referenciaAfiliado: ref,
           codigoCupom: appliedCoupon?.codigo || undefined
         })

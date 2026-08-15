@@ -14,24 +14,15 @@ import {
 } from '../services/cupons-service.js';
 import { getTicket } from '../services/ticket-pricing.js';
 import { fetchAddressByPostalCode } from '../services/viacep-service.js';
+import { parseCheckoutInput, parseCheckoutQuantity } from '../services/checkout-input.js';
 
 const sendJson = (response, status, body) => {
   response.status(status).json(body);
 };
 
-const isValidCpf = (cpf) => {
-  if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) return false;
-
-  const calculateDigit = (length) => {
-    let sum = 0;
-    for (let index = 0; index < length; index += 1) {
-      sum += Number(cpf[index]) * (length + 1 - index);
-    }
-    const remainder = (sum * 10) % 11;
-    return remainder === 10 ? 0 : remainder;
-  };
-
-  return calculateDigit(9) === Number(cpf[9]) && calculateDigit(10) === Number(cpf[10]);
+const rejectBadRequest = (response, reason, error, extra = {}) => {
+  console.warn('Checkout rejeitado na validação.', { reason, ...extra });
+  return sendJson(response, 400, { error });
 };
 
 const normalizeSiteUrl = (value) => {
@@ -59,21 +50,22 @@ const handleValidarCupom = async (body, response) => {
 
   const { tipoIngresso, quantidade, codigoCupom } = body || {};
   const ticket = getTicket(tipoIngresso);
+  const cleanQuantity = parseCheckoutQuantity(quantidade);
 
   if (!ticket) {
-    return sendJson(response, 400, { error: 'Tipo de ingresso inválido.' });
+    return rejectBadRequest(response, 'tipo_ingresso_invalido', 'Tipo de ingresso inválido.');
   }
-  if (!Number.isInteger(quantidade) || quantidade < 1 || quantidade > 10) {
-    return sendJson(response, 400, { error: 'Quantidade inválida.' });
+  if (cleanQuantity === null) {
+    return rejectBadRequest(response, 'quantidade_invalida', 'Quantidade inválida.');
   }
   if (typeof codigoCupom !== 'string' || !codigoCupom.trim()) {
-    return sendJson(response, 400, { error: 'Informe o código do cupom.' });
+    return rejectBadRequest(response, 'cupom_ausente', 'Informe o código do cupom.');
   }
 
   try {
     const pricing = await calculatePricingWithCupom({
       tipoIngresso,
-      quantidade,
+      quantidade: cleanQuantity,
       codigoCupom
     });
 
@@ -85,6 +77,10 @@ const handleValidarCupom = async (body, response) => {
       total: pricing.total
     });
   } catch (error) {
+    console.warn('Checkout rejeitado na validação.', {
+      reason: 'cupom_invalido',
+      message: error?.message || CUPOM_INDISPONIVEL_MESSAGE
+    });
     return sendJson(response, 400, {
       error: error?.message || CUPOM_INDISPONIVEL_MESSAGE
     });
@@ -110,46 +106,34 @@ export default async function handler(request, response) {
     return sendJson(response, 500, { error: 'Banco de dados nao configurado.' });
   }
 
-  const { nome, telefone, email, cpfCnpj, cep, numeroEndereco, tipoIngresso, quantidade, referenciaAfiliado, codigoCupom } = body;
-  const cleanName = typeof nome === 'string' ? nome.trim().replace(/\s+/g, ' ') : '';
-  const cleanPhone = typeof telefone === 'string' ? telefone.replace(/\D/g, '') : '';
-  const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-  const cleanCpfCnpj = typeof cpfCnpj === 'string' ? cpfCnpj.replace(/\D/g, '') : '';
-  const cleanPostalCode = typeof cep === 'string' ? cep.replace(/\D/g, '') : '';
-  const cleanAddressNumber = typeof numeroEndereco === 'string' ? numeroEndereco.trim() : '';
-  const cleanReference =
-  typeof referenciaAfiliado === 'string' && referenciaAfiliado.trim()
-    ? referenciaAfiliado.trim()
-    : 'Venda direta';
+  const parsedInput = parseCheckoutInput(body);
+  if (!parsedInput.ok) {
+    return rejectBadRequest(response, parsedInput.reason, parsedInput.error, {
+      tipoIngresso: body?.tipoIngresso || null
+    });
+  }
+
+  const {
+    cleanName,
+    cleanPhone,
+    cleanEmail,
+    cleanCpfCnpj,
+    cleanPostalCode,
+    cleanAddressNumber,
+    cleanReference,
+    cleanQuantity,
+    tipoIngresso,
+    codigoCupom
+  } = parsedInput.data;
   const ticket = getTicket(tipoIngresso);
 
-  if (cleanName.length < 3 || cleanName.length > 120) {
-    return sendJson(response, 400, { error: 'Nome inválido.' });
-  }
-  if (cleanPhone.length < 10 || cleanPhone.length > 11) {
-    return sendJson(response, 400, { error: 'Telefone inválido.' });
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || cleanEmail.length > 254) {
-    return sendJson(response, 400, { error: 'E-mail inválido.' });
-  }
-  if (!isValidCpf(cleanCpfCnpj)) {
-    return sendJson(response, 400, { error: 'CPF inválido.' });
-  }
-  if (!/^\d{8}$/.test(cleanPostalCode)) {
-    return sendJson(response, 400, { error: 'CEP inválido.' });
-  }
-  if (!cleanAddressNumber || cleanAddressNumber.length > 20) {
-    return sendJson(response, 400, { error: 'Número do endereço inválido.' });
-  }
   if (!ticket) {
-    return sendJson(response, 400, { error: 'Tipo de ingresso inválido.' });
+    return rejectBadRequest(response, 'tipo_ingresso_desconhecido', 'Tipo de ingresso inválido.', {
+      tipoIngresso
+    });
   }
-  if (!Number.isInteger(quantidade) || quantidade < 1 || quantidade > 10) {
-    return sendJson(response, 400, { error: 'Quantidade inválida.' });
-  }
-  if (cleanReference.length > 100) {
-    return sendJson(response, 400, { error: 'Referência de afiliado inválida.' });
-  }
+
+  const quantidade = cleanQuantity;
 
   const apiUrl = (process.env.ASAAS_API_URL || 'https://api-sandbox.asaas.com/v3').replace(/\/$/, '');
   if (apiUrl.includes('sandbox') && String(process.env.SITE_URL || '').includes('afcevents.com.br')) {
@@ -185,6 +169,10 @@ export default async function handler(request, response) {
   try {
     addressData = await fetchAddressByPostalCode(cleanPostalCode);
   } catch (error) {
+    console.warn('Checkout rejeitado na validação.', {
+      reason: error?.message === 'CEP não encontrado.' ? 'cep_nao_encontrado' : 'cep_indisponivel',
+      postalCode: cleanPostalCode
+    });
     return sendJson(response, 400, {
       error: error?.message === 'CEP não encontrado.'
         ? 'CEP não encontrado. Confira o CEP informado.'
@@ -247,7 +235,10 @@ export default async function handler(request, response) {
   };
 
   if (!Number.isInteger(addressData.cityCode)) {
-    console.error('CEP sem código IBGE da cidade.', { postalCode: cleanPostalCode });
+    console.warn('Checkout rejeitado na validação.', {
+      reason: 'cep_sem_ibge',
+      postalCode: cleanPostalCode
+    });
     await flagCheckoutFailure(pedido.id);
     return sendJson(response, 400, {
       error: 'Não foi possível validar a cidade do CEP informado. Confira o CEP e tente novamente.'
