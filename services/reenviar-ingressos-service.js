@@ -1,5 +1,5 @@
 import { enviarIngressosPorEmail } from './email-service.js';
-import { buildEventoDados, enviarConfirmacaoPayPerView } from './pay-per-view-service.js';
+import { buildEventoDados, enviarConfirmacaoPayPerView, getPayPerViewTransmissaoLink, registrarTransmissaoEnviada } from './pay-per-view-service.js';
 import { APPROVED_PAYMENT_STATUS_VALUES } from './payment-events.js';
 import { findIngressosByPedidoId } from '../repositories/ingressos-repository.js';
 import {
@@ -76,7 +76,11 @@ const enviarIngressosDoPedido = async (
 
 const reenviarConfirmacaoPayPerViewDoPedido = async (
   pedido,
-  { enviarConfirmacao = enviarConfirmacaoPayPerView, atualizarStatus = updatePedidoEmailStatus } = {}
+  {
+    enviarConfirmacao = enviarConfirmacaoPayPerView,
+    atualizarStatus = updatePedidoEmailStatus,
+    registrarTransmissao = registrarTransmissaoEnviada
+  } = {}
 ) => {
   const emailId = await enviarConfirmacao({
     comprador: { nome: pedido.nome },
@@ -91,6 +95,11 @@ const reenviarConfirmacaoPayPerViewDoPedido = async (
     email_enviado_em: new Date().toISOString(),
     email_tentativas: (pedido.email_tentativas || 0) + 1,
     email_ultimo_erro: null
+  });
+
+  await registrarTransmissao(pedido.id, {
+    link: getPayPerViewTransmissaoLink(),
+    tentativasAtuais: pedido.transmissao_tentativas || 0
   });
 
   return {
@@ -111,7 +120,8 @@ export const reenviarIngressosPorEmail = async (
     listarIngressos = findIngressosByPedidoId,
     enviarEmail = enviarIngressosPorEmail,
     enviarConfirmacao = enviarConfirmacaoPayPerView,
-    atualizarStatus = updatePedidoEmailStatus
+    atualizarStatus = updatePedidoEmailStatus,
+    registrarTransmissao = registrarTransmissaoEnviada
   } = {}
 ) => {
   const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -136,7 +146,8 @@ export const reenviarIngressosPorEmail = async (
     if (pedido.tipo_ingresso === 'pay-per-view') {
       return await reenviarConfirmacaoPayPerViewDoPedido(pedido, {
         enviarConfirmacao,
-        atualizarStatus
+        atualizarStatus,
+        registrarTransmissao
       });
     }
 

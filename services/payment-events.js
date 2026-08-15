@@ -7,7 +7,7 @@ import {
 } from '../repositories/pedidos-repository.js';
 import { emitIngressos } from './ingressos-service.js';
 import { enviarIngressosPorEmail } from './email-service.js';
-import { enviarConfirmacaoPayPerView, buildEventoDados } from './pay-per-view-service.js';
+import { enviarConfirmacaoPayPerView, buildEventoDados, getPayPerViewTransmissaoLink, registrarTransmissaoEnviada } from './pay-per-view-service.js';
 import { sendMetaPurchaseEvent } from './meta-capi-service.js';
 import { markCupomAsUsed } from './cupons-service.js';
 
@@ -88,6 +88,7 @@ export const onPaymentApproved = async (
     sendEmail = enviarIngressosPorEmail,
     sendPayPerViewConfirmation = enviarConfirmacaoPayPerView,
     updateEmailStatus = updatePedidoEmailStatus,
+    registrarTransmissao = registrarTransmissaoEnviada,
     trackPurchase = sendMetaPurchaseEvent,
     confirmarCupom = markCupomAsUsed
   } = {}
@@ -156,6 +157,20 @@ export const onPaymentApproved = async (
       email_tentativas: (pedido.email_tentativas || 0) + 1,
       email_ultimo_erro: null
     });
+
+    if (payPerView) {
+      try {
+        await registrarTransmissao(pedido.id, {
+          link: getPayPerViewTransmissaoLink(),
+          tentativasAtuais: pedido.transmissao_tentativas || 0
+        });
+      } catch (error) {
+        console.error('Falha ao registrar transmissão Pay-Per-View enviada.', {
+          pedidoId: pedido.id,
+          message: error?.message || 'Erro desconhecido'
+        });
+      }
+    }
 
     return {
       pedidoId: pedido.id,

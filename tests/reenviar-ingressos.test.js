@@ -81,7 +81,8 @@ test('reenviarIngressosPorEmail reenvia confirmação Pay-Per-View', async () =>
         confirmacaoPayload = payload;
         return 'ppv-email-123';
       },
-      atualizarStatus: async (pedidoId, data) => ({ ...pedido, ...data })
+      atualizarStatus: async (pedidoId, data) => ({ ...pedido, ...data }),
+      registrarTransmissao: async () => ({})
     }
   );
 

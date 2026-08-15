@@ -4,7 +4,9 @@ import { onPaymentApproved, PAY_PER_VIEW_TICKET_TYPE } from '../services/payment
 import {
   enviarLinkTransmissaoEmMassa,
   validateTransmissaoLink,
-  enviarConfirmacaoPayPerView
+  enviarConfirmacaoPayPerView,
+  getPayPerViewTransmissaoLink,
+  DEFAULT_PPV_TRANSMISSAO_LINK
 } from '../services/pay-per-view-service.js';
 import { createEnviarTransmissaoHandler } from '../api/admin/pay-per-view/enviar-transmissao.js';
 import { createAdminSessionCookie } from '../lib/admin-auth.js';
@@ -17,7 +19,27 @@ test('validateTransmissaoLink aceita HTTPS e rejeita HTTP', () => {
   assert.throws(() => validateTransmissaoLink(''), /obrigatório/);
 });
 
-test('template de confirmação PPV não inclui QR Code', () => {
+test('template de confirmação PPV inclui botão de transmissão quando link informado', () => {
+  const html = renderPayPerViewConfirmacaoEmailHtml({
+    compradorNome: 'João',
+    eventoNome: 'AFC',
+    dataEvento: '15 de agosto de 2026',
+    horarioEvento: '19h',
+    localEvento: 'Ginásio JK',
+    enderecoEvento: 'Campo Mourão',
+    quantidade: 2,
+    codigoPedido: 'AFC-TEST',
+    linkTransmissao: 'https://youtube.com/live/sLSnzRoJ2Mo?feature=share'
+  });
+
+  assert.match(html, /Pay-Per-View confirmado/);
+  assert.match(html, /Assistir transmissão/);
+  assert.match(html, /https:\/\/youtube\.com\/live\/sLSnzRoJ2Mo\?feature=share/);
+  assert.doesNotMatch(html, /novo e-mail/);
+  assert.doesNotMatch(html, /QR Code/);
+});
+
+test('template de confirmação PPV sem link mantém aviso de e-mail futuro', () => {
   const html = renderPayPerViewConfirmacaoEmailHtml({
     compradorNome: 'João',
     eventoNome: 'AFC',
@@ -29,9 +51,7 @@ test('template de confirmação PPV não inclui QR Code', () => {
     codigoPedido: 'AFC-TEST'
   });
 
-  assert.match(html, /Pay-Per-View confirmado/);
   assert.match(html, /novo e-mail/);
-  assert.doesNotMatch(html, /QR Code/);
 });
 
 test('template de transmissão inclui botão com link', () => {
@@ -45,6 +65,13 @@ test('template de transmissão inclui botão com link', () => {
 
   assert.match(html, /Assistir transmissão/);
   assert.match(html, /https:\/\/youtube\.com\/live\/xyz/);
+});
+
+test('getPayPerViewTransmissaoLink usa link padrão do YouTube', () => {
+  const previous = process.env.PPV_TRANSMISSAO_LINK;
+  delete process.env.PPV_TRANSMISSAO_LINK;
+  assert.equal(getPayPerViewTransmissaoLink(), DEFAULT_PPV_TRANSMISSAO_LINK);
+  if (previous) process.env.PPV_TRANSMISSAO_LINK = previous;
 });
 
 test('onPaymentApproved para pay-per-view não emite ingresso físico', async () => {
@@ -69,10 +96,22 @@ test('onPaymentApproved para pay-per-view não emite ingresso físico', async ()
     return 'email-ppv-1';
   };
   const updateEmailStatus = async () => ({ ...pedido, email_enviado: true });
+  let transmissaoRegistrada = false;
+  const registrarTransmissao = async (pedidoId, { link }) => {
+    transmissaoRegistrada = true;
+    assert.equal(pedidoId, pedido.id);
+    assert.equal(link, DEFAULT_PPV_TRANSMISSAO_LINK);
+  };
 
   const result = await onPaymentApproved(
     { pedido },
-    { emit, sendEmail: async () => { throw new Error('não deveria enviar ingresso físico'); }, sendPayPerViewConfirmation, updateEmailStatus }
+    {
+      emit,
+      sendEmail: async () => { throw new Error('não deveria enviar ingresso físico'); },
+      sendPayPerViewConfirmation,
+      updateEmailStatus,
+      registrarTransmissao
+    }
   );
 
   assert.equal(emitCalls, 0);
@@ -80,6 +119,7 @@ test('onPaymentApproved para pay-per-view não emite ingresso físico', async ()
   assert.equal(result.emailSent, true);
   assert.equal(sentPayloads.length, 1);
   assert.equal(sentPayloads[0].email, 'ppv@example.com');
+  assert.equal(transmissaoRegistrada, true);
 });
 
 test('onPaymentApproved para arquibancada continua emitindo ingresso físico', async () => {

@@ -7,6 +7,8 @@ import {
 } from '../repositories/pedidos-repository.js';
 import { APPROVED_PAYMENT_STATUS_VALUES } from './payment-events.js';
 
+export const DEFAULT_PPV_TRANSMISSAO_LINK = 'https://youtube.com/live/sLSnzRoJ2Mo?feature=share';
+
 const isValidEmail = (value) => typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 export const buildEventoDados = () => ({
@@ -37,6 +39,26 @@ export const validateTransmissaoLink = (link) => {
   return parsed.href;
 };
 
+export const getPayPerViewTransmissaoLink = () => {
+  const raw = process.env.PPV_TRANSMISSAO_LINK?.trim() || DEFAULT_PPV_TRANSMISSAO_LINK;
+  return validateTransmissaoLink(raw);
+};
+
+export const registrarTransmissaoEnviada = async (
+  pedidoId,
+  { link, tentativasAtuais = 0 },
+  { atualizarStatus = updatePedidoTransmissaoStatus } = {}
+) => {
+  const safeLink = validateTransmissaoLink(link);
+  return atualizarStatus(pedidoId, {
+    transmissao_link: safeLink,
+    transmissao_enviada: true,
+    transmissao_enviada_em: new Date().toISOString(),
+    transmissao_tentativas: tentativasAtuais + 1,
+    transmissao_ultimo_erro: null
+  });
+};
+
 export const enviarConfirmacaoPayPerView = async (payload, options = {}) => {
   const { comprador, email, pedido, quantidade, dadosEvento } = payload || {};
   const { resendClient } = options;
@@ -61,14 +83,15 @@ export const enviarConfirmacaoPayPerView = async (payload, options = {}) => {
     enderecoEvento: evento.endereco,
     quantidade: quantidade || pedido?.quantidade || 1,
     codigoPedido: pedido?.codigo_pedido || '',
-    dominio: evento.dominio
+    dominio: evento.dominio,
+    linkTransmissao: getPayPerViewTransmissaoLink()
   });
 
   const resend = resendClient || new Resend(apiKey);
   const response = await resend.emails.send({
     from: 'AFC Ingressos <ingressos@afcevents.com.br>',
     to: [destinatario],
-    subject: 'Pay-Per-View confirmado — Avalanche Fight Championship',
+    subject: 'Seu acesso Pay-Per-View — Avalanche Fight Championship',
     html
   });
 

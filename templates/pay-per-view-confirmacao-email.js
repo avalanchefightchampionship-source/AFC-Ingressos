@@ -14,8 +14,12 @@ export const renderPayPerViewConfirmacaoEmailHtml = ({
   enderecoEvento,
   quantidade,
   codigoPedido,
-  dominio = 'https://www.afcevents.com.br'
-}) => `<!DOCTYPE html>
+  dominio = 'https://www.afcevents.com.br',
+  linkTransmissao
+}) => {
+  const safeLink = linkTransmissao ? escapeHtml(linkTransmissao) : '';
+
+  return `<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -53,6 +57,23 @@ export const renderPayPerViewConfirmacaoEmailHtml = ({
                 </table>
                 <p style="margin:16px 0 12px 0;font-size:14px;line-height:1.7;color:#4b5563;">Pedido: <strong style="color:#111827;">${escapeHtml(codigoPedido || '')}</strong></p>
                 <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#4b5563;">Quantidade de acessos: <strong style="color:#111827;">${escapeHtml(String(quantidade || 1))}</strong></p>
+                ${safeLink ? `
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse:separate;border-spacing:0;background:#ecfdf5;border:1px solid #86efac;border-radius:16px;margin-top:16px;">
+                  <tr>
+                    <td style="padding:18px 20px;">
+                      <div style="font-size:12px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#047857;">Acesso à transmissão</div>
+                      <p style="margin:10px 0 16px;font-size:14px;line-height:1.7;color:#065f46;">Seu acesso já está liberado. Clique no botão abaixo para assistir ao vivo:</p>
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse:separate;border-spacing:0;">
+                        <tr>
+                          <td align="center" style="padding:0 0 12px 0;">
+                            <a href="${safeLink}" style="display:inline-block;padding:16px 32px;background:#e10600;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;border-radius:999px;">Assistir transmissão</a>
+                          </td>
+                        </tr>
+                      </table>
+                      <p style="margin:0;font-size:13px;line-height:1.7;color:#047857;word-break:break-all;">Link alternativo: <a href="${safeLink}" style="color:#047857;">${safeLink}</a></p>
+                    </td>
+                  </tr>
+                </table>` : `
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse:separate;border-spacing:0;background:#fff7ed;border:1px solid #fed7aa;border-radius:16px;margin-top:16px;">
                   <tr>
                     <td style="padding:18px 20px;">
@@ -60,7 +81,7 @@ export const renderPayPerViewConfirmacaoEmailHtml = ({
                       <p style="margin:10px 0 0;font-size:14px;line-height:1.7;color:#7c2d12;">Você receberá um <strong>novo e-mail</strong> com o botão de acesso à transmissão ao vivo perto da data do evento. Guarde este e-mail para referência.</p>
                     </td>
                   </tr>
-                </table>
+                </table>`}
               </td>
             </tr>
             <tr>
@@ -75,3 +96,4 @@ export const renderPayPerViewConfirmacaoEmailHtml = ({
     </table>
   </body>
 </html>`;
+};
