@@ -82,31 +82,17 @@ test('payload de pay-per-view não inclui parcelamento', () => {
   assert.equal(payload.installment, undefined);
 });
 
-test('payload prefere customerData e não envia customer id junto', () => {
-  const customerData = {
-    name: 'Cliente Teste',
-    email: 'cliente@example.com',
-    phone: '44999999999',
-    cpfCnpj: '39053344705',
-    postalCode: '87300000',
-    addressNumber: '123',
-    address: 'Rua Principal',
-    province: 'Centro',
-    state: 'PR',
-    city: 4104303
-  };
-
+test('payload usa customer id quando informado', () => {
   const payload = buildAsaasCheckoutPayload({
     ...baseArgs,
     tipoIngresso: 'arquibancada',
     ticket: { name: 'Ingresso Arquibancada', value: 60 },
     totalValue: 60,
-    customerId: 'cus_abc',
-    customerData
+    customerId: 'cus_abc'
   });
 
-  assert.deepEqual(payload.customerData, customerData);
-  assert.equal(payload.customer, undefined);
+  assert.equal(payload.customer, 'cus_abc');
+  assert.equal(payload.customerData, undefined);
 });
 
 test('buildAsaasCheckoutCustomerData inclui UF e código IBGE', () => {

@@ -146,6 +146,8 @@ O endpoint aceita apenas `POST` autenticado pelo header `asaas-access-token`. Ca
 
 Eventos preparados:
 
+**Cobranças (`payment`):**
+
 - `PAYMENT_CONFIRMED`
 - `PAYMENT_RECEIVED`
 - `PAYMENT_OVERDUE`
@@ -157,6 +159,15 @@ Eventos preparados:
 - `PAYMENT_CHARGEBACK_DISPUTE`
 - `PAYMENT_AWAITING_CHARGEBACK_REVERSAL`
 - `PAYMENT_DUNNING_REQUESTED`
+
+**Checkout hospedado (`checkout`):**
+
+- `CHECKOUT_PAID` (obrigatório para confirmar pagamentos do checkout)
+- `CHECKOUT_EXPIRED`
+- `CHECKOUT_CANCELED`
+- `CHECKOUT_CREATED` (ignorado pelo backend)
+
+No painel Asaas, configure o webhook em `Integrações > Webhooks` apontando para `https://www.afcevents.com.br/api/webhook-asaas` e inclua **tanto** os eventos de cobrança quanto os de checkout acima.
 
 `onPaymentApproved()` emite ingressos físicos (arquibancada/vip) ou envia confirmação Pay-Per-View, conforme `tipo_ingresso`. Para ingressos físicos, gera QR Code e envia e-mail; para Pay-Per-View, pula a emissão de ingresso.
 

@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
-import { processPaymentEvent } from '../services/payment-events.js';
+import { processWebhookEvent } from '../services/payment-events.js';
 import {
   claimWebhookEvent,
   markWebhookEventProcessed,
@@ -29,7 +29,7 @@ export const createWebhookHandler = ({
   claimEvent = claimWebhookEvent,
   markEventProcessed = markWebhookEventProcessed,
   releaseEvent = releaseWebhookEvent,
-  processEvent = processPaymentEvent
+  processEvent = processWebhookEvent
 } = {}) => async function handler(request, response) {
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
@@ -51,8 +51,18 @@ export const createWebhookHandler = ({
   const eventId = typeof payload?.id === 'string' ? payload.id.trim() : '';
   const eventType = typeof payload?.event === 'string' ? payload.event.trim() : '';
   const paymentId = typeof payload?.payment?.id === 'string' ? payload.payment.id.trim() : '';
+  const checkoutId = typeof payload?.checkout?.id === 'string' ? payload.checkout.id.trim() : '';
+  const isCheckoutEvent = eventType.startsWith('CHECKOUT_');
 
-  if (!eventId || eventId.length > 200 || !eventType || eventType.length > 100 || !paymentId) {
+  if (!eventId || eventId.length > 200 || !eventType || eventType.length > 100) {
+    return sendJson(response, 400, { error: 'Evento inválido.' });
+  }
+
+  if (isCheckoutEvent) {
+    if (!checkoutId) {
+      return sendJson(response, 400, { error: 'Evento de checkout inválido.' });
+    }
+  } else if (!paymentId) {
     return sendJson(response, 400, { error: 'Evento inválido.' });
   }
 

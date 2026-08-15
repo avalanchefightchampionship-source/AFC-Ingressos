@@ -216,6 +216,43 @@ const findPedido = async ({ externalReference, paymentId, checkoutSession }, rep
   return null;
 };
 
+const finalizePedidoPaymentUpdate = async ({
+  pedido,
+  mapping,
+  webhookEvent,
+  paymentId,
+  repository,
+  approvedHandler
+}) => {
+  const statusPedido = mapping.approved && pedido.status_pedido === 'INGRESSOS_EMITIDOS'
+    ? 'INGRESSOS_EMITIDOS'
+    : mapping.statusPedido;
+  const shouldTrackPurchase = mapping.approved && !APPROVED_PAYMENT_STATUSES.has(pedido.status_pagamento);
+  const updatedPedido = await repository.updatePaymentStatus(pedido.id, {
+    status_pagamento: mapping.statusPagamento,
+    status_pedido: statusPedido,
+    asaas_payment_id: paymentId || pedido.asaas_payment_id || null
+  });
+
+  let emissao = null;
+  if (mapping.approved) {
+    emissao = await approvedHandler({
+      pedido: updatedPedido,
+      eventId: webhookEvent.id,
+      eventType: webhookEvent.event,
+      paymentId: paymentId || null,
+      shouldTrackPurchase
+    });
+  }
+
+  return {
+    result: 'PEDIDO_ATUALIZADO',
+    pedidoId: updatedPedido.id,
+    codigoPedido: updatedPedido.codigo_pedido,
+    ingressosEmitidos: emissao?.quantidade ?? null
+  };
+};
+
 export const processPaymentEvent = async (
   webhookEvent,
   { repository = defaultRepository, approvedHandler = onPaymentApproved } = {}
@@ -254,31 +291,89 @@ export const processPaymentEvent = async (
     return { result: 'PEDIDO_NAO_ENCONTRADO', pedidoId: null, codigoPedido: null };
   }
 
-  const statusPedido = mapping.approved && pedido.status_pedido === 'INGRESSOS_EMITIDOS'
-    ? 'INGRESSOS_EMITIDOS'
-    : mapping.statusPedido;
-  const shouldTrackPurchase = mapping.approved && !APPROVED_PAYMENT_STATUSES.has(pedido.status_pagamento);
-  const updatedPedido = await repository.updatePaymentStatus(pedido.id, {
-    status_pagamento: mapping.statusPagamento,
-    status_pedido: statusPedido,
-    asaas_payment_id: paymentId || null
+  return finalizePedidoPaymentUpdate({
+    pedido,
+    mapping,
+    webhookEvent,
+    paymentId: paymentId || null,
+    repository,
+    approvedHandler
   });
+};
 
-  let emissao = null;
-  if (mapping.approved) {
-    emissao = await approvedHandler({
-      pedido: updatedPedido,
-      eventId: webhookEvent.id,
-      eventType: webhookEvent.event,
-      paymentId: paymentId || null,
-      shouldTrackPurchase
-    });
+export const CHECKOUT_EVENT_STATUS = Object.freeze({
+  CHECKOUT_PAID: {
+    statusPagamento: 'PAGAMENTO_CONFIRMADO',
+    statusPedido: 'PAGAMENTO_CONFIRMADO',
+    approved: true
+  },
+  CHECKOUT_EXPIRED: {
+    statusPagamento: 'VENCIDO',
+    statusPedido: 'VENCIDO'
+  },
+  CHECKOUT_CANCELED: {
+    statusPagamento: 'CANCELADO',
+    statusPedido: 'CANCELADO'
+  }
+});
+
+export const processCheckoutEvent = async (
+  webhookEvent,
+  { repository = defaultRepository, approvedHandler = onPaymentApproved } = {}
+) => {
+  if (webhookEvent.event === 'CHECKOUT_CREATED') {
+    return { result: 'EVENTO_IGNORADO', pedidoId: null, codigoPedido: null };
   }
 
-  return {
-    result: 'PEDIDO_ATUALIZADO',
-    pedidoId: updatedPedido.id,
-    codigoPedido: updatedPedido.codigo_pedido,
-    ingressosEmitidos: emissao?.quantidade ?? null
-  };
+  const mapping = CHECKOUT_EVENT_STATUS[webhookEvent.event];
+  if (!mapping) {
+    return { result: 'EVENTO_NAO_SUPORTADO', pedidoId: null, codigoPedido: null };
+  }
+
+  const checkoutId = typeof webhookEvent.checkout?.id === 'string'
+    ? webhookEvent.checkout.id.trim()
+    : '';
+  const externalReference = typeof webhookEvent.checkout?.externalReference === 'string'
+    ? webhookEvent.checkout.externalReference.trim()
+    : '';
+
+  console.info('Processing checkout webhook lookup.', {
+    eventType: webhookEvent.event,
+    checkoutId: checkoutId || null,
+    externalReference: externalReference || null
+  });
+
+  let pedido = null;
+  if (checkoutId) {
+    pedido = await repository.findByCheckoutId(checkoutId);
+  }
+  if (!pedido && externalReference) {
+    pedido = await repository.findByExternalReference(externalReference);
+  }
+
+  if (!pedido) {
+    console.warn('Pedido não encontrado para webhook de checkout do Asaas.', {
+      eventType: webhookEvent.event,
+      checkoutId: checkoutId || null,
+      externalReference: externalReference || null
+    });
+    return { result: 'PEDIDO_NAO_ENCONTRADO', pedidoId: null, codigoPedido: null };
+  }
+
+  return finalizePedidoPaymentUpdate({
+    pedido,
+    mapping,
+    webhookEvent,
+    paymentId: null,
+    repository,
+    approvedHandler
+  });
+};
+
+export const processWebhookEvent = async (webhookEvent, deps = {}) => {
+  const eventType = typeof webhookEvent?.event === 'string' ? webhookEvent.event : '';
+  if (eventType.startsWith('CHECKOUT_')) {
+    return processCheckoutEvent(webhookEvent, deps);
+  }
+  return processPaymentEvent(webhookEvent, deps);
 };

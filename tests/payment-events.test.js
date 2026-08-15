@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createWebhookHandler } from '../api/webhook-asaas.js';
-import { onPaymentApproved, processPaymentEvent } from '../services/payment-events.js';
+import { onPaymentApproved, processPaymentEvent, processCheckoutEvent, processWebhookEvent } from '../services/payment-events.js';
 
 const createRepository = ({
   byExternalReference = null,
@@ -53,6 +53,71 @@ const pedido = {
   status_pagamento: 'AGUARDANDO_PAGAMENTO',
   status_pedido: 'CHECKOUT_CRIADO'
 };
+
+const createCheckoutEvent = (event, id = `evt_${event}`, overrides = {}) => ({
+  id,
+  event,
+  checkout: {
+    id: 'chk_test',
+    externalReference: 'afc-test',
+    status: event === 'CHECKOUT_PAID' ? 'PAID' : 'ACTIVE',
+    ...overrides
+  }
+});
+
+test('CHECKOUT_PAID atualiza pedido pelo checkout id e emite ingressos', async () => {
+  const repository = createRepository({ byCheckoutId: pedido });
+  let approvedCalls = 0;
+
+  const result = await processCheckoutEvent(createCheckoutEvent('CHECKOUT_PAID'), {
+    repository,
+    approvedHandler: async () => { approvedCalls += 1; }
+  });
+
+  assert.equal(result.result, 'PEDIDO_ATUALIZADO');
+  assert.equal(repository.updates[0].paymentData.status_pagamento, 'PAGAMENTO_CONFIRMADO');
+  assert.equal(approvedCalls, 1);
+});
+
+test('CHECKOUT_PAID aceito pelo endpoint de webhook sem payment.id', async () => {
+  Object.assign(process.env, { ASAAS_WEBHOOK_TOKEN: 't'.repeat(40) });
+  let statusCode;
+  let body;
+  const handler = createWebhookHandler({
+    saveEvent: async () => ({ duplicate: false, id: 'stored-checkout-event' }),
+    claimEvent: async () => true,
+    markEventProcessed: async () => {},
+    releaseEvent: async () => {},
+    processEvent: async () => ({
+      result: 'PEDIDO_ATUALIZADO',
+      pedidoId: pedido.id,
+      codigoPedido: pedido.codigo_pedido
+    })
+  });
+  const response = {
+    setHeader() {},
+    status(status) { statusCode = status; return this; },
+    json(value) { body = value; }
+  };
+
+  await handler({
+    method: 'POST',
+    headers: { 'asaas-access-token': process.env.ASAAS_WEBHOOK_TOKEN },
+    body: createCheckoutEvent('CHECKOUT_PAID', 'evt_checkout_paid')
+  }, response);
+
+  assert.equal(statusCode, 200);
+  assert.equal(body.processed, true);
+});
+
+test('processWebhookEvent encaminha CHECKOUT_PAID para fluxo de checkout', async () => {
+  const repository = createRepository({ byCheckoutId: pedido });
+  const result = await processWebhookEvent(createCheckoutEvent('CHECKOUT_PAID'), {
+    repository,
+    approvedHandler: async () => ({ quantidade: 1, ingressos: [] })
+  });
+  assert.equal(result.result, 'PEDIDO_ATUALIZADO');
+});
 
 test('pagamento aprovado atualiza o pedido e chama onPaymentApproved', async () => {
   const repository = createRepository({ byExternalReference: pedido });

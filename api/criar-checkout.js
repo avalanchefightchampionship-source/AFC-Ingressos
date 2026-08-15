@@ -3,7 +3,7 @@ import {
   createPendingOrder,
   flagCheckoutFailure
 } from '../services/pedidos-service.js';
-import { buildAsaasCheckoutPayload, buildAsaasCustomerPayload, buildAsaasCheckoutCustomerData } from '../services/asaas-checkout-payload.js';
+import { buildAsaasCheckoutPayload, buildAsaasCustomerPayload } from '../services/asaas-checkout-payload.js';
 import {
   calculatePricingWithCupom,
   CUPOM_INDISPONIVEL_MESSAGE,
@@ -254,19 +254,6 @@ export default async function handler(request, response) {
     cityCode: addressData.cityCode
   });
 
-  const checkoutCustomerData = buildAsaasCheckoutCustomerData({
-    name: cleanName,
-    email: cleanEmail,
-    mobilePhone: cleanPhone,
-    cpfCnpj: cleanCpfCnpj,
-    postalCode: addressData.postalCode,
-    addressNumber: cleanAddressNumber,
-    address: addressData.address,
-    province: addressData.province,
-    state: addressData.state,
-    cityCode: addressData.cityCode
-  });
-
   let customerId;
   try {
     const customerSearchResponse = await fetch(
@@ -329,7 +316,7 @@ export default async function handler(request, response) {
     ticket,
     quantidade: itemPricing.quantidade,
     externalReference: pedido.externalReference,
-    customerData: checkoutCustomerData,
+    customerId,
     unitValue: itemPricing.unitValue,
     totalValue: valorTotal,
     callback: {
