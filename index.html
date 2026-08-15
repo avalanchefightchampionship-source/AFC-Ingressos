@@ -93,23 +93,23 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 18px;
+      gap: 20px;
       width: 100%;
       max-width: 1160px;
       margin: 0 auto;
-      padding: 8px 0 9px;
+      padding: 10px 0 11px;
     }
 
     .event-countdown-urgency {
       margin: 0;
       flex: 1;
       min-width: 0;
-      font-size: .68rem;
+      font-size: .76rem;
       font-weight: 700;
-      letter-spacing: .14em;
+      letter-spacing: .13em;
       text-transform: uppercase;
-      color: rgba(255,255,255,.72);
-      line-height: 1.35;
+      color: rgba(255,255,255,.78);
+      line-height: 1.4;
     }
 
     .event-countdown-urgency strong {
@@ -121,50 +121,78 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 6px;
+      gap: 8px;
       flex-shrink: 0;
     }
 
     .countdown-unit {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-width: 42px;
-      padding: 4px 7px 5px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.1);
+      min-width: 50px;
+      padding: 7px 11px 8px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.12),
+        0 8px 22px rgba(0,0,0,.24),
+        0 0 0 1px rgba(225,6,0,.1);
+    }
+
+    .countdown-unit::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid transparent;
+      background: linear-gradient(135deg, rgba(225,6,0,.35), rgba(255,255,255,.08), rgba(225,6,0,.12)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      opacity: .85;
     }
 
     .countdown-unit span {
+      position: relative;
+      z-index: 1;
       font-family: 'Bebas Neue', 'Montserrat', sans-serif;
-      font-size: 1.2rem;
+      font-size: 1.45rem;
       line-height: 1;
       letter-spacing: .04em;
       color: #fff;
       font-variant-numeric: tabular-nums;
+      text-shadow: 0 2px 10px rgba(0,0,0,.35);
     }
 
     .countdown-unit small {
-      margin-top: 1px;
-      font-size: .52rem;
+      position: relative;
+      z-index: 1;
+      margin-top: 3px;
+      font-size: .58rem;
       font-weight: 700;
-      letter-spacing: .1em;
+      letter-spacing: .12em;
       text-transform: uppercase;
-      color: rgba(255,255,255,.55);
+      color: rgba(255,255,255,.62);
     }
 
     .countdown-sep {
       font-family: 'Bebas Neue', 'Montserrat', sans-serif;
-      font-size: 1rem;
+      font-size: 1.15rem;
       line-height: 1;
-      color: rgba(255,255,255,.28);
+      color: rgba(255,46,46,.55);
       transform: translateY(-1px);
       user-select: none;
     }
 
-    .event-countdown-bar.is-live .countdown-unit span { color: var(--red-strong); }
+    .event-countdown-bar.is-live .countdown-unit span {
+      color: var(--red-strong);
+      text-shadow: 0 0 18px rgba(255,46,46,.35);
+    }
 
     header {
       position: relative;
@@ -629,6 +657,27 @@
 
     @media (max-width: 940px) {
       .nav { display: none; }
+      .event-countdown-inner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px 0 12px;
+      }
+      .event-countdown-urgency {
+        text-align: center;
+        font-size: .74rem;
+      }
+      .event-countdown-timer {
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+      }
+      .countdown-unit {
+        min-width: 56px;
+        padding: 9px 12px 10px;
+      }
+      .countdown-unit span { font-size: 1.65rem; }
+      .countdown-unit small { font-size: .62rem; }
       .two-col { grid-template-columns: 1fr; gap: 34px; }
       .cards { grid-template-columns: repeat(2, 1fr); }
       .fighter { min-height: 580px; }
@@ -639,20 +688,34 @@
 
     @media (max-width: 640px) {
       :root { --container: min(100% - 24px, 1160px); }
+      .event-countdown-bar { padding: 0 12px; }
       .event-countdown-inner {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-        padding: 8px 0 9px;
+        gap: 12px;
+        padding: 12px 0 14px;
       }
       .event-countdown-urgency {
-        font-size: .6rem;
-        letter-spacing: .1em;
-        text-align: center;
+        font-size: .72rem;
+        letter-spacing: .11em;
+        line-height: 1.45;
       }
-      .event-countdown-timer { justify-content: center; }
-      .countdown-unit { min-width: 38px; padding: 3px 6px 4px; }
-      .countdown-unit span { font-size: 1.05rem; }
+      .event-countdown-timer {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .countdown-sep { display: none; }
+      .countdown-unit {
+        min-width: 0;
+        width: 100%;
+        padding: 11px 8px 12px;
+        border-radius: 16px;
+      }
+      .countdown-unit span { font-size: 1.85rem; }
+      .countdown-unit small {
+        margin-top: 4px;
+        font-size: .64rem;
+        letter-spacing: .08em;
+      }
       .ticket-options { grid-template-columns: 1fr; }
       header { height: 70px; padding: 0 14px; }
       .brand-text { display: none; }
